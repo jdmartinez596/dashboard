@@ -1,0 +1,11 @@
+@keyframes scanAnim {
+    0% { top: 30%; opacity: 0.3; }
+    50% { top: 70%; opacity: 1; }
+    100% { top: 30%; opacity: 0.3; }
+}
+#reader video {
+    transition: filter 0.3s ease;
+}
+#reader video.high-contrast {
+    filter: contrast(2.2) brightness(1.15) grayscale(1);
+}
