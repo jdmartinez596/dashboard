@@ -162,19 +162,18 @@ function onBarcodeDetected(decodedText) {
     closeScanner();
 
     setTimeout(() => {
-        if (currentScannerTarget === 'm_sale_serial_scanner') {
-            const input = document.getElementById('saleSerialWrapper_input');
-            const hidden = document.getElementById('m_sale_serial');
-            const item = state.inventory.find(
-                i => i.serial === cleaned && i.status === 'Disponible'
-            );
-            if (item) {
-                hidden.value = cleaned;
-                input.value = `${cleaned} â€” ${item.model}`;
-            } else {
-                if (hidden) hidden.value = cleaned;
-                if (input) input.value = cleaned;
-                alert(`Serial "${cleaned}" no encontrado en inventario disponible.`);
+        // Multi-device scanner target: sale-scanner-{id}
+        if (currentScannerTarget && currentScannerTarget.startsWith('sale-scanner-')) {
+            const id = currentScannerTarget.replace('sale-scanner-', '');
+            const select = document.getElementById(`sale-serial-${id}`);
+            if (select) {
+                const opt = [...select.options].find(o => o.value === cleaned);
+                if (opt) {
+                    select.value = cleaned;
+                    updateSaleTotal();
+                } else {
+                    alert(`Serial "${cleaned}" no encontrado en inventario disponible.`);
+                }
             }
         } else {
             const target = document.getElementById(currentScannerTarget);
@@ -353,16 +352,19 @@ async function scanFromImage(event) {
         // Ã‰xito â€” insertar directamente
         closeScanner();
         setTimeout(() => {
-            if (currentScannerTarget === 'm_sale_serial_scanner') {
-                const input = document.getElementById('saleSerialWrapper_input');
-                const hidden = document.getElementById('m_sale_serial');
-                const item = state.inventory.find(
-                    i => i.serial === cleaned && i.status === 'Disponible'
-                );
-                if (item) {
-                    hidden.value = cleaned;
-                    input.value = `${cleaned} â€” ${item.model}`;
-                } else {
+            if (currentScannerTarget && currentScannerTarget.startsWith('sale-scanner-')) {
+                const id = currentScannerTarget.replace('sale-scanner-', '');
+                const select = document.getElementById(`sale-serial-${id}`);
+                if (select) {
+                    const opt = [...select.options].find(o => o.value === cleaned);
+                    if (opt) {
+                        select.value = cleaned;
+                        updateSaleTotal();
+                    } else {
+                        alert(`Serial "${cleaned}" no encontrado en inventario disponible.`);
+                    }
+                }
+            } else {
                     if (hidden) hidden.value = cleaned;
                     if (input) input.value = cleaned;
                     alert(`Serial "${cleaned}" no encontrado en inventario disponible.`);
@@ -454,4 +456,91 @@ async function reiniciarCamara() {
     }
     scannerActive = true;
     startScanner(currentScannerTarget);
+}
+
+// === Laser Scanner PC (USB Keyboard Wedge) ===
+function toggleLaserBar() {
+    const bar = document.getElementById('laserBar');
+    if (!bar) return;
+    const visible = bar.style.display === 'flex';
+    bar.style.display = visible ? 'none' : 'flex';
+    if (!visible) {
+        setTimeout(() => document.getElementById('laserInput').focus(), 100);
+    }
+}
+
+function hideLaserBar() {
+    const bar = document.getElementById('laserBar');
+    if (bar) bar.style.display = 'none';
+}
+
+(function initLaserScanner() {
+    let laserBuffer = '';
+    let laserTimer = null;
+    const LASER_THRESHOLD_MS = 80;
+
+    document.addEventListener('keydown', function(e) {
+        const active = document.activeElement;
+        const isLaserInput = active && active.id === 'laserInput';
+        const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT') && !isLaserInput;
+        if (isTyping) return;
+
+        if (e.key === 'Enter' && laserBuffer.length > 3) {
+            handleLaserScan(laserBuffer.trim());
+            laserBuffer = '';
+            clearTimeout(laserTimer);
+            return;
+        }
+
+        if (e.key.length === 1) {
+            laserBuffer += e.key;
+            clearTimeout(laserTimer);
+            laserTimer = setTimeout(() => { laserBuffer = ''; }, LASER_THRESHOLD_MS * 20);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const li = document.getElementById('laserInput');
+        if (!li) return;
+        li.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleLaserScan(li.value.trim());
+                li.value = '';
+            }
+        });
+    });
+})();
+
+function handleLaserScan(code) {
+    if (!code) return;
+    const target = document.getElementById('laserTarget');
+    const mode = target ? target.value : 'search';
+
+    if (mode === 'inventory') {
+        openModal('inventoryModal');
+        const serialInput = document.getElementById('m_inv_serial');
+        if (serialInput) { serialInput.value = code; serialInput.dispatchEvent(new Event('input')); }
+        showToast(`Serial ${code} cargado en inventario`, 'success');
+    } else if (mode === 'sale') {
+        const firstSelect = document.querySelector('#saleDeviceList [id^="sale-serial-"]');
+        if (firstSelect) {
+            const opt = [...firstSelect.options].find(o => o.value === code);
+            if (opt) { firstSelect.value = code; updateSaleTotal(); showToast(`Serial ${code} seleccionado`, 'success'); }
+            else showToast(`Serial ${code} no encontrado en disponibles`, 'error');
+        } else {
+            openModal('saleModal');
+            showToast('Abre una venta primero para asignar el serial', 'info');
+        }
+    } else {
+        const searchInv = document.getElementById('searchInventory');
+        const searchSale = document.getElementById('searchSales');
+        const view = document.querySelector('.view.active');
+        if (view && view.id === 'sales' && searchSale) {
+            searchSale.value = code; renderSales();
+        } else if (searchInv) {
+            searchInv.value = code; renderInventory();
+        }
+        showToast(`Buscando: ${code}`, 'success');
+    }
 }

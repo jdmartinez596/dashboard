@@ -28,25 +28,11 @@ function openModal(id) {
     if (id === 'saleModal') {
         populateSources();
         if (editingSaleIndex === -1) {
-            populateSaleSerials();
+            const deviceList = document.getElementById('saleDeviceList');
+            if (deviceList) deviceList.innerHTML = '';
+            saleDeviceCount = 0;
+            addSaleDevice();
             document.getElementById('m_sale_date').value = getLocalDateString();
-            // Asegurar que el input visible estÃ© habilitado
-            const visibleInput = document.getElementById('saleSerialWrapper_input');
-            if (visibleInput) {
-                visibleInput.disabled = false;
-                visibleInput.style.opacity = '1';
-                visibleInput.style.cursor = 'pointer';
-                visibleInput.style.backgroundColor = '';
-            }
-        } else {
-            // Modo ediciÃ³n: bloquear visualmente el campo de serial
-            const visibleInput = document.getElementById('saleSerialWrapper_input');
-            if (visibleInput) {
-                visibleInput.disabled = true;
-                visibleInput.style.opacity = '0.6';
-                visibleInput.style.cursor = 'not-allowed';
-                visibleInput.style.backgroundColor = 'var(--light-gray)';
-            }
         }
     }
     if (id === 'inventoryModal') {
@@ -79,18 +65,9 @@ function closeModal(id) {
     if (id === 'saleModal') {
         editingSaleIndex = -1;
         document.getElementById('saleForm').reset();
-        // Restablecer estado visual del serial
-        const visibleInput = document.getElementById('saleSerialWrapper_input');
-        if (visibleInput) {
-            visibleInput.disabled = false;
-            visibleInput.style.opacity = '1';
-            visibleInput.style.cursor = 'pointer';
-            visibleInput.style.backgroundColor = '';
-            visibleInput.value = '';
-        }
-        // Limpiar tambiÃ©n el hidden
-        const hiddenSerial = document.getElementById('m_sale_serial');
-        if (hiddenSerial) hiddenSerial.value = '';
+        saleDeviceCount = 0;
+        const deviceList = document.getElementById('saleDeviceList');
+        if (deviceList) deviceList.innerHTML = '';
     }
     if (id === 'inventoryModal')   editingInventoryIndex = -1;
     if (id === 'transactionModal') editingFinanceIndex = -1;

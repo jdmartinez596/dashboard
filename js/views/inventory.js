@@ -103,12 +103,12 @@ function renderInventory() {
 
         tbody.innerHTML += `
             <tr>
-                <td><strong>${i.serial}</strong></td>
-                <td>${i.model}</td>
-                <td style="font-size:0.75rem;">${i.entryDate}</td>
-                <td><span style="${stagnantStyle}">${daysText}</span></td>
-                <td>$${(parseFloat(i.cost) || 0).toLocaleString()}</td>
-                <td>
+                <td data-label="Serial"><strong>${i.serial}</strong></td>
+                <td data-label="Modelo">${i.model}</td>
+                <td data-label="Ingreso" style="font-size:0.75rem;">${i.entryDate}</td>
+                <td data-label="Días"><span style="${stagnantStyle}">${daysText}</span></td>
+                <td data-label="Costo">$${(parseFloat(i.cost) || 0).toLocaleString()}</td>
+                <td data-label="Estado">
                     <span style="
                         padding: 0.25rem 0.75rem;
                         border-radius: 100px;
@@ -122,7 +122,7 @@ function renderInventory() {
                         ? '<div style="font-size:0.7rem; color:var(--text-gray); margin-top:0.2rem;">' + i.returnNote + '</div>'
                         : ''}
                 </td>
-                <td>
+                <td data-label="Acciones">
                     <div style="display:flex; gap:0.5rem;">
                         <button onclick="editInventory('${i.serial}')" style="background:none; border:none; color:var(--soft-blue); cursor:pointer;"><i data-lucide="pencil" size="18"></i></button>
                         <button onclick="deleteItem('${i.serial}')" style="background:none; border:none; color:var(--vibrant-red); cursor:pointer;"><i data-lucide="trash-2" size="18"></i></button>
@@ -180,14 +180,4 @@ function deleteItem(serial) {
     }
 }
 
-function populateSaleSerials() {
-    const options = state.inventory
-        .filter(i => i.status === 'Disponible')
-        .map(i => ({ value: i.serial, label: `${i.serial} â€” ${i.model}` }));
-    createSearchableSelect({
-        wrapperId: 'saleSerialWrapper',
-        hiddenInputId: 'm_sale_serial',
-        placeholder: 'Escribe el serial o modelo...',
-        options
-    });
-}
+

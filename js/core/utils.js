@@ -78,6 +78,9 @@ function showSyncStatus(status) {
     } else if (status === 'syncing') {
         icon.innerHTML = '<i data-lucide="refresh-cw" class="spin"></i>';
         text.innerText = 'Sincronizando...';
+    } else if (status === 'online') {
+        icon.innerHTML = '<i data-lucide="wifi" style="color: #047481"></i>';
+        text.innerText = 'Conectado';
     } else if (status === 'offline') {
         icon.innerHTML = '<i data-lucide="cloud-off" style="color: #EE424E"></i>';
         text.innerText = 'Modo Offline';
@@ -86,6 +89,29 @@ function showSyncStatus(status) {
         text.innerText = 'Error de Sinc.';
     }
     lucide.createIcons();
+}
+
+// --- Toast Notification System ---
+function showToast(message, type) {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:99999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none;';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#047481' : type === 'error' ? '#EE424E' : type === 'warning' ? '#B7791F' : '#121E6C';
+    toast.style.cssText = `background:${bgColor};color:white;padding:0.85rem 1.25rem;border-radius:12px;font-size:0.85rem;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,0.15);animation:slideUp 0.3s ease;pointer-events:auto;max-width:380px;`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 // --- Audio Feedback ---

@@ -159,6 +159,95 @@
         padding: 0.85rem 1rem;
     }
 
+    /* === Mobile Card-View Tables === */
+    #salesTable thead,
+    #inventoryTable thead,
+    #returnsTable thead,
+    #financeTable thead,
+    #traceTable thead {
+        display: none;
+    }
+    #salesTable tr,
+    #inventoryTable tr,
+    #returnsTable tr,
+    #financeTable tr,
+    #traceTable tr {
+        display: block;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        background: var(--white);
+    }
+    #salesTable td,
+    #inventoryTable td,
+    #returnsTable td,
+    #financeTable td,
+    #traceTable td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+        font-size: 0.82rem;
+        min-height: unset;
+    }
+    #salesTable td:last-child,
+    #inventoryTable td:last-child,
+    #returnsTable td:last-child,
+    #financeTable td:last-child,
+    #traceTable td:last-child {
+        border-bottom: none;
+    }
+    #salesTable td:before,
+    #inventoryTable td:before,
+    #returnsTable td:before,
+    #financeTable td:before,
+    #traceTable td:before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 0.7rem;
+        color: var(--text-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-right: 0.5rem;
+        flex-shrink: 0;
+    }
+    #salesTable td[data-label="Acciones"]:before,
+    #inventoryTable td[data-label="Acciones"]:before {
+        display: none;
+    }
+    #salesTable td[data-label="Acciones"],
+    #inventoryTable td[data-label="Acciones"] {
+        justify-content: flex-end;
+    }
+    table {
+        min-width: unset !important;
+    }
+    .section-card {
+        overflow: visible;
+    }
+    .desktop-only {
+        display: none !important;
+    }
+    .custom-dates-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .custom-dates-wrapper input {
+        width: 100% !important;
+    }
+    .custom-dates-wrapper span {
+        display: none;
+    }
+
+    /* === Toast mobile === */
+    #toastContainer {
+        bottom: 1rem !important;
+        right: 1rem !important;
+        left: 1rem !important;
+    }
+
     /* === Accounting / Contabilidad responsive === */
     #accounting header > div:not(#customAccDates) {
         flex-wrap: wrap;

@@ -120,7 +120,6 @@ function refreshUI() {
     renderAccounting();
     renderReturns();
     updateDashboard();
-    populateSaleSerials();
     lucide.createIcons();
 }
 

@@ -22,46 +22,129 @@ function onSalePeriodChange() {
     renderSales();
 }
 
+// --- Multi-Device Sale ---
+let saleDeviceCount = 0;
+
+function addSaleDevice() {
+    saleDeviceCount++;
+    const id = saleDeviceCount;
+    const available = state.inventory.filter(i => i.status === 'Disponible');
+    if (available.length === 0) { alert('No hay equipos disponibles en inventario.'); return; }
+
+    const options = available.map(i =>
+        `<option value="${i.serial}">${i.model} — ${i.serial}</option>`
+    ).join('');
+
+    const row = document.createElement('div');
+    row.id = `sale-device-${id}`;
+    row.style.cssText = 'display:grid;grid-template-columns:1fr auto auto;gap:0.5rem;align-items:end;background:var(--light-gray);padding:0.75rem;border-radius:10px;';
+    row.innerHTML = `
+        <div class="form-group" style="margin:0;">
+            <label style="font-size:0.75rem;margin-bottom:0.25rem;display:block;">Dispositivo ${id}</label>
+            <div style="display:flex;gap:0.4rem;">
+                <select id="sale-serial-${id}" onchange="updateSaleTotal()" required
+                    style="flex:1;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--white);">
+                    ${options}
+                </select>
+                <button type="button" onclick="startScanner('sale-scanner-${id}')" title="Escanear"
+                    style="background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:0 0.6rem;cursor:pointer;display:flex;align-items:center;">
+                    <i data-lucide="scan" style="width:16px;height:16px;color:var(--deep-blue);"></i>
+                </button>
+            </div>
+        </div>
+        <div class="form-group" style="margin:0;">
+            <label style="font-size:0.75rem;margin-bottom:0.25rem;display:block;">Precio ($)</label>
+            <input type="number" id="sale-price-${id}" min="0" oninput="updateSaleTotal()" required
+                style="width:110px;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;">
+        </div>
+        <button type="button" onclick="removeSaleDevice(${id})"
+            style="background:none;border:none;cursor:pointer;color:var(--vibrant-red);padding:0.4rem;align-self:end;margin-bottom:2px;">
+            <i data-lucide="trash-2" style="width:18px;height:18px;"></i>
+        </button>`;
+
+    document.getElementById('saleDeviceList').appendChild(row);
+    lucide.createIcons();
+    updateSaleTotal();
+}
+
+function removeSaleDevice(id) {
+    const el = document.getElementById(`sale-device-${id}`);
+    if (el) el.remove();
+    if (document.getElementById('saleDeviceList').children.length === 0) addSaleDevice();
+    updateSaleTotal();
+}
+
+function updateSaleTotal() {
+    const list = document.getElementById('saleDeviceList');
+    if (!list) return;
+    let total = 0;
+    list.querySelectorAll('[id^="sale-price-"]').forEach(el => {
+        total += parseFloat(el.value) || 0;
+    });
+    const display = document.getElementById('saleTotalDisplay');
+    if (display) display.innerText = `$${Math.round(total).toLocaleString()}`;
+}
+
 document.getElementById('saleForm').onsubmit = function (e) {
     e.preventDefault();
-    const serial = document.getElementById('m_sale_serial').value;
-    const client = document.getElementById('m_sale_client').value;
-    const city = document.getElementById('m_sale_city').value;
+    const client = document.getElementById('m_sale_client').value.trim();
+    const city = document.getElementById('m_sale_city').value.trim();
     const source = document.getElementById('m_sale_source').value;
     const saleDate = document.getElementById('m_sale_date').value;
-    const price = parseFloat(document.getElementById('m_sale_price').value);
 
-    if (editingSaleIndex === -1) {
-        const item = state.inventory.find(i => i.serial === serial);
-        if (!serial || !item) { alert('No hay equipos disponibles para vender.'); return; }
-        item.status = 'Vendido';
-        state.sales.push({ serial, model: item.model, cost: item.cost, price, client, city, source, saleDate });
-        
-        // Registro contable automÃ¡tico
-        state.transactions.push({
-            id: Date.now(),
-            type: 'income',
-            category: 'Venta',
-            description: `Venta Equipo â€” ${serial} â€” Cliente: ${client}`,
-            amount: price,
-            date: saleDate
-        });
-    } else {
+    // --- EDIT MODE ---
+    if (editingSaleIndex !== -1) {
+        const priceEl = document.querySelector('#saleDeviceList [id^="sale-price-"]');
+        const price = parseFloat(priceEl?.value);
+        if (!price || price <= 0) { alert('Ingresa un precio válido.'); return; }
         const oldSerial = state.sales[editingSaleIndex].serial;
         state.sales[editingSaleIndex] = { ...state.sales[editingSaleIndex], price, client, city, source, saleDate };
-        
-        // Actualizar registro contable existente
-        const trans = state.transactions.find(t => t.type === 'income' && t.description.includes(oldSerial));
-        if (trans) {
-            trans.description = `Venta Equipo â€” ${oldSerial} â€” Cliente: ${client}`;
-            trans.amount = price;
-            trans.date = saleDate;
-        }
+        const trans = state.transactions.find(t => t.type === 'income' && t.category === 'Venta' && t.description.includes(oldSerial));
+        if (trans) { trans.amount = price; trans.date = saleDate; trans.description = `Venta Equipo — ${oldSerial} — Cliente: ${client}`; }
+        saveState(); closeModal('saleModal'); renderSales(); updateDashboard();
+        return;
     }
-    saveState();
-    closeModal('saleModal');
-    renderSales();
-    updateDashboard();
+
+    // --- NEW MODE ---
+    const list = document.getElementById('saleDeviceList');
+    const rows = list ? [...list.children] : [];
+
+    if (rows.length === 0) { alert('Agrega al menos un dispositivo.'); return; }
+
+    const serials = rows.map(row => {
+        const sel = row.querySelector('[id^="sale-serial-"]');
+        return sel ? sel.value : '';
+    });
+    if (new Set(serials).size !== serials.length) {
+        alert('Hay dispositivos duplicados en la venta. Verifica los seriales.');
+        return;
+    }
+
+    let allOk = true;
+    rows.forEach(row => {
+        const selEl = row.querySelector('[id^="sale-serial-"]');
+        const priceEl = row.querySelector('[id^="sale-price-"]');
+        if (!selEl || !priceEl) return;
+        const serial = selEl.value;
+        const price = parseFloat(priceEl.value);
+        if (!serial || !price || price <= 0) { allOk = false; return; }
+        const item = state.inventory.find(i => i.serial === serial);
+        if (!item || item.status !== 'Disponible') {
+            alert(`El equipo ${serial} ya no está disponible.`);
+            allOk = false; return;
+        }
+        item.status = 'Vendido';
+        state.sales.push({ serial, model: item.model, cost: item.cost, price, client, city, source, saleDate });
+        state.transactions.push({
+            id: Date.now() + Math.random(),
+            type: 'income', category: 'Venta',
+            description: `Venta Equipo — ${serial} — Cliente: ${client}`,
+            amount: price, date: saleDate
+        });
+    });
+
+    if (!allOk) return;
+    saveState(); closeModal('saleModal'); renderSales(); updateDashboard();
 };
 
 function renderSales() {
@@ -89,7 +172,7 @@ function renderSales() {
         return matchSearch && matchDate;
     });
 
-    // Orden cronolÃ³gico descendente
+    // Orden cronológico descendente
     filtered.sort((a, b) => {
         const da = parseDateLocal(a.saleDate) || 0;
         const db = parseDateLocal(b.saleDate) || 0;
@@ -107,21 +190,21 @@ function renderSales() {
 
         const retBtn = s.returned
             ? `<span style="font-size:0.65rem; color:var(--vibrant-red); font-weight:800; background:rgba(238,66,78,0.1); padding:0.2rem 0.4rem; border-radius:100px;">DEVUELTO</span>`
-            : `<button onclick="openReturnModal('${s.serial}')" title="Registrar devoluciÃ³n" style="background:none; border:none; cursor:pointer; color:var(--vibrant-red); display:flex; align-items:center; padding:0.25rem;">
+            : `<button onclick="openReturnModal('${s.serial}')" title="Registrar devolución" style="background:none; border:none; cursor:pointer; color:var(--vibrant-red); display:flex; align-items:center; padding:0.25rem;">
                  <i data-lucide="rotate-ccw" style="width:16px;height:16px;"></i>
                </button>`;
 
         tbody.innerHTML += `
             <tr>
-                <td>${s.saleDate}</td>
-                <td>${s.model} <br><small>${s.serial}</small></td>
-                <td>${s.client}</td>
-                <td><strong>$${priceNum.toLocaleString()}</strong></td>
-                <td style="color: ${utilityColor}; font-weight: 700;">
+                <td data-label="Fecha">${s.saleDate}</td>
+                <td data-label="Modelo">${s.model} <br><small>${s.serial}</small></td>
+                <td data-label="Cliente">${s.client}</td>
+                <td data-label="Precio"><strong>$${priceNum.toLocaleString()}</strong></td>
+                <td data-label="Utilidad" style="color: ${utilityColor}; font-weight: 700;">
                     $${utility.toLocaleString()} <br><small style="color:var(--text-gray)">${margin}%</small>
                 </td>
-                <td><span class="badge" style="background:#E2E8F0; color:var(--deep-blue)">${s.source}</span></td>
-                <td>
+                <td data-label="Canal"><span class="badge" style="background:#E2E8F0; color:var(--deep-blue)">${s.source}</span></td>
+                <td data-label="Acciones">
                     <div style="display:flex; gap:0.5rem; align-items:center;">
                         <button onclick="editSale('${s.serial}')" style="background:none; border:none; color:var(--soft-blue); cursor:pointer;"><i data-lucide="pencil" size="18"></i></button>
                         <button onclick="deleteSale('${s.serial}')" style="background:none; border:none; color:var(--vibrant-red); cursor:pointer;"><i data-lucide="trash-2" size="18"></i></button>
@@ -134,7 +217,7 @@ function renderSales() {
     const countEl = document.getElementById('salesResultCount');
     if (countEl) {
         countEl.innerText = saleDateRange
-            ? `${filtered.length} venta${filtered.length !== 1 ? 's' : ''} en el perÃ­odo`
+            ? `${filtered.length} venta${filtered.length !== 1 ? 's' : ''} en el período`
             : `${filtered.length} venta${filtered.length !== 1 ? 's' : ''} en total`;
     }
     lucide.createIcons();
@@ -145,25 +228,42 @@ function editSale(serial) {
     if (index === -1) return;
     editingSaleIndex = index;
     const s = state.sales[index];
-    createSearchableSelect({
-        wrapperId: 'saleSerialWrapper',
-        hiddenInputId: 'm_sale_serial',
-        placeholder: 'Serial del equipo',
-        options: [{ value: s.serial, label: `${s.serial} â€” ${s.model}` }]
-    });
+
     populateSources();
-    document.getElementById('m_sale_serial').value = s.serial;
-    document.getElementById('saleSerialWrapper_input').value = `${s.serial} â€” ${s.model}`;
+    document.getElementById('m_sale_date').value = s.saleDate;
     document.getElementById('m_sale_client').value = s.client;
     document.getElementById('m_sale_city').value = s.city;
     document.getElementById('m_sale_source').value = s.source;
-    document.getElementById('m_sale_date').value = s.saleDate;
-    document.getElementById('m_sale_price').value = s.price;
+
+    const deviceList = document.getElementById('saleDeviceList');
+    if (deviceList) deviceList.innerHTML = '';
+    saleDeviceCount = 0;
+    saleDeviceCount++;
+    const id = saleDeviceCount;
+
+    const row = document.createElement('div');
+    row.id = `sale-device-${id}`;
+    row.style.cssText = 'display:grid;grid-template-columns:1fr auto;gap:0.5rem;align-items:end;background:var(--light-gray);padding:0.75rem;border-radius:10px;';
+    row.innerHTML = `
+        <div class="form-group" style="margin:0;">
+            <label style="font-size:0.75rem;margin-bottom:0.25rem;display:block;">Dispositivo — ${s.model}</label>
+            <input type="text" value="${s.serial} — ${s.model}" readonly
+                style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--light-gray);color:var(--text-gray);cursor:not-allowed;">
+            <input type="hidden" id="sale-serial-${id}" value="${s.serial}">
+        </div>
+        <div class="form-group" style="margin:0;">
+            <label style="font-size:0.75rem;margin-bottom:0.25rem;display:block;">Precio ($)</label>
+            <input type="number" id="sale-price-${id}" value="${s.price}" min="0" oninput="updateSaleTotal()" required
+                style="width:120px;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;">
+        </div>`;
+    deviceList.appendChild(row);
+    updateSaleTotal();
     openModal('saleModal');
+    lucide.createIcons();
 }
 
 function deleteSale(serial) {
-    if (confirm('Â¿Eliminar esta venta? Se ajustarÃ¡ el inventario y las finanzas automÃ¡ticamente.')) {
+    if (confirm('¿Eliminar esta venta? Se ajustará el inventario y las finanzas automáticamente.')) {
         const index = state.sales.findIndex(s => s.serial === serial);
         if (index === -1) return;
         const s = state.sales[index];
@@ -175,17 +275,17 @@ function deleteSale(serial) {
             if (item.returnNote) delete item.returnNote;
         }
 
-        // 2. Eliminar transacciÃ³n financiera de la venta
+        // 2. Eliminar transacción financiera de la venta
         state.transactions = state.transactions.filter(t => 
             !(t.type === 'income' && t.description.includes(serial) && t.category === 'Venta')
         );
 
-        // 3. Si fue devuelta, eliminar el registro de devoluciÃ³n y su transacciÃ³n
+        // 3. Si fue devuelta, eliminar el registro de devolución y su transacción
         if (s.returned) {
             const retId = s.returnId;
             state.returns = (state.returns || []).filter(r => r.id !== retId);
             state.transactions = state.transactions.filter(t => 
-                !(t.category === 'DevoluciÃ³n' && t.description.includes(serial))
+                !(t.category === 'Devolución' && t.description.includes(serial))
             );
         }
 
@@ -208,7 +308,7 @@ document.getElementById('returnForm').onsubmit = async (e) => {
     const action = document.getElementById('m_ret_action').value;
     const condition = document.getElementById('m_ret_condition').value;
 
-    // Crear registro de devoluciÃ³n
+    // Crear registro de devolución
     const ret = {
         id: 'RET-' + Date.now(),
         serial: s.serial,
@@ -234,26 +334,26 @@ document.getElementById('returnForm').onsubmit = async (e) => {
     state.sales[currentReturnSaleIndex].returned = true;
     state.sales[currentReturnSaleIndex].returnId = ret.id;
 
-    // AcciÃ³n sobre el inventario segÃºn decisiÃ³n
+    // Acción sobre el inventario según decisión
     if (action === 'Reingreso' && item) {
         // Volver a disponible
         item.status = 'Disponible';
         item.entryDate = ret.returnDate;
-        item.returnNote = `Reingreso por devoluciÃ³n ${ret.id}`;
+        item.returnNote = `Reingreso por devolución ${ret.id}`;
     } else if (action === 'Baja' && item) {
         item.status = 'Baja';
-        item.returnNote = `Baja por devoluciÃ³n ${ret.id}`;
-    } else if (action === 'GarantÃ­a' && item) {
-        item.status = 'GarantÃ­a';
-        item.returnNote = `En garantÃ­a por devoluciÃ³n ${ret.id}`;
+        item.returnNote = `Baja por devolución ${ret.id}`;
+    } else if (action === 'Garantía' && item) {
+        item.status = 'Garantía';
+        item.returnNote = `En garantía por devolución ${ret.id}`;
     }
 
-    // Registrar automÃ¡ticamente en finanzas como egreso
+    // Registrar automáticamente en finanzas como egreso
     // si el precio de venta fue cobrado (impacto financiero)
     state.transactions.push({
         type: 'expense',
-        category: 'DevoluciÃ³n',
-        description: `DevoluciÃ³n ${ret.id} â€” ${s.serial} â€” Cliente: ${s.client || 'N/A'}`,
+        category: 'Devolución',
+        description: `Devolución ${ret.id} — ${s.serial} — Cliente: ${s.client || 'N/A'}`,
         amount: s.price || 0,
         date: ret.returnDate
     });
@@ -263,10 +363,10 @@ document.getElementById('returnForm').onsubmit = async (e) => {
     renderSales();
     updateDashboard();
 
-    alert(`âœ… DevoluciÃ³n ${ret.id} registrada.\n` +
-          `AcciÃ³n: ${action}\n` +
+    alert(`✅ Devolución ${ret.id} registrada.\n` +
+          `Acción: ${action}\n` +
           `El equipo fue marcado como: ${
               action === 'Reingreso' ? 'Disponible' :
-              action === 'GarantÃ­a' ? 'En GarantÃ­a' : 'Baja'
+              action === 'Garantía' ? 'En Garantía' : 'Baja'
           }`);
 };
