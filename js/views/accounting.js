@@ -1,0 +1,266 @@
+function onAccountingPeriodChange() {
+    const period = document.getElementById('accPeriod').value;
+    const customDiv = document.getElementById('customAccDates');
+    if (period === 'custom') {
+        customDiv.style.display = 'flex';
+        const today = getLocalDateString();
+        const fromEl = document.getElementById('accFrom');
+        const toEl = document.getElementById('accTo');
+        fromEl.removeAttribute('min');
+        fromEl.removeAttribute('max');
+        toEl.removeAttribute('min');
+        toEl.removeAttribute('max');
+        
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        fromEl.value = getLocalDateString(thirtyDaysAgo);
+        toEl.value = today;
+    } else {
+        customDiv.style.display = 'none';
+    }
+    renderAccounting();
+}
+
+function renderAccounting() {
+    const accPeriodEl = document.getElementById('accPeriod');
+    if (!accPeriodEl) return;
+    const period = accPeriodEl.value;
+    const from = document.getElementById('accFrom').value;
+    const to = document.getElementById('accTo').value;
+    
+    const range = getDateRangeFilter(period, from, to);
+    const now = new Date();
+
+    const filterFn = (dateStr) => {
+        if (!range) return true;
+        const d = parseDateLocal(dateStr);
+        return d >= range.from && d <= range.to;
+    };
+
+    const sales = state.sales.filter(s => filterFn(s.saleDate) && s.returned !== true);
+    const transactions = (state.transactions || []).filter(t => filterFn(t.date));
+    const returns = (state.returns || []).filter(r => filterFn(r.returnDate));
+    const inventoryEntries = state.inventory.filter(i => filterFn(i.entryDate));
+
+    const totalSales = sales.reduce((acc, s) => acc + (parseFloat(s.price) || 0), 0);
+    const otherIncome = transactions.filter(t => t.type === 'income' && t.category !== 'Venta').reduce((acc, t) => acc + (parseFloat(t.amount) || 0), 0);
+    const totalIncome = totalSales + otherIncome;
+
+    const costOfInventoryPurchased = inventoryEntries.reduce((acc, i) => acc + (parseFloat(i.cost) || 0), 0);
+    const costOfMerchSold = sales.reduce((acc, s) => acc + getSaleCost(s), 0);
+    const opExpenses = transactions.filter(t => t.type === 'expense' && t.category !== 'DevoluciÃ³n').reduce((acc, t) => acc + (parseFloat(t.amount) || 0), 0);
+    const totalReturnsPaid = returns.reduce((acc, r) => acc + (parseFloat(r.salePrice) || 0), 0);
+
+    // Cost of Goods Sold calculations
+    const openingStock = state.inventory.filter(i => {
+        const entryDate = parseDateLocal(i.entryDate);
+        if (!entryDate || (range && entryDate >= range.from)) return false;
+        const sale = state.sales.find(s => s.serial === i.serial);
+        if (sale) {
+            const saleDate = parseDateLocal(sale.saleDate);
+            if (saleDate && (range && saleDate < range.from)) return false;
+        }
+        return true;
+    }).reduce((acc, i) => acc + (parseFloat(i.cost) || 0), 0);
+
+    const closingStock = state.inventory.filter(i => {
+        const entryDate = parseDateLocal(i.entryDate);
+        if (!entryDate || (range && entryDate > range.to)) return false;
+        const sale = state.sales.find(s => s.serial === i.serial);
+        if (sale) {
+            const saleDate = parseDateLocal(sale.saleDate);
+            if (saleDate && (range && saleDate <= range.to)) return false;
+        }
+        return true;
+    }).reduce((acc, i) => acc + (parseFloat(i.cost) || 0), 0);
+
+    const totalExpensesAcc = costOfMerchSold + opExpenses + totalReturnsPaid;
+
+    const grossProfit = totalSales - costOfMerchSold;
+    const opProfit = grossProfit - opExpenses;
+    const netProfit = opProfit - totalReturnsPaid + otherIncome;
+    const marginNet = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0;
+
+    const availableStockValue = state.inventory.filter(i => i.status === 'Disponible').reduce((acc, i) => acc + (parseFloat(i.cost) || 0), 0);
+    
+    const stagnantStockValue = state.inventory.filter(i => {
+        if (i.status !== 'Disponible') return false;
+        const start = parseDateLocal(i.entryDate);
+        const days = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+        return days > 30;
+    }).reduce((acc, i) => acc + (parseFloat(i.cost) || 0), 0);
+
+    const netKpi = document.getElementById('acc-kpi-net-profit');
+    if (netKpi) {
+        netKpi.innerText = `$${netProfit.toLocaleString()}`;
+        netKpi.style.color = netProfit >= 0 ? '#047481' : 'var(--vibrant-red)';
+    }
+    
+    if (document.getElementById('acc-kpi-total-income')) document.getElementById('acc-kpi-total-income').innerText = `$${totalIncome.toLocaleString()}`;
+    if (document.getElementById('acc-kpi-total-expenses')) document.getElementById('acc-kpi-total-expenses').innerText = `$${totalExpensesAcc.toLocaleString()}`;
+    
+    const marginEl = document.getElementById('acc-kpi-margin');
+    const marginCard = document.getElementById('acc-kpi-margin-card');
+    if (marginEl && marginCard) {
+        marginEl.innerText = `${marginNet.toFixed(1)}%`;
+        if (marginNet > 20) { marginEl.style.color = '#047481'; marginCard.style.borderBottom = "4px solid #047481"; }
+        else if (marginNet >= 10) { marginEl.style.color = '#B7791F'; marginCard.style.borderBottom = "4px solid #B7791F"; }
+        else { marginEl.style.color = 'var(--vibrant-red)'; marginCard.style.borderBottom = "4px solid var(--vibrant-red)"; }
+    }
+
+    if (document.getElementById('acc-merch-opening')) document.getElementById('acc-merch-opening').innerText = `$${openingStock.toLocaleString()}`;
+    if (document.getElementById('acc-merch-closing')) document.getElementById('acc-merch-closing').innerText = `$${closingStock.toLocaleString()}`;
+    if (document.getElementById('acc-merch-stagnant-val')) document.getElementById('acc-merch-stagnant-val').innerText = `$${stagnantStockValue.toLocaleString()}`;
+
+    if (document.getElementById('acc-merch-purchased')) document.getElementById('acc-merch-purchased').innerText = `$${costOfInventoryPurchased.toLocaleString()}`;
+    if (document.getElementById('acc-merch-cost-sold')) document.getElementById('acc-merch-cost-sold').innerText = `$${costOfMerchSold.toLocaleString()}`;
+    if (document.getElementById('acc-merch-available')) document.getElementById('acc-merch-available').innerText = `$${availableStockValue.toLocaleString()}`;
+    if (document.getElementById('acc-total-op-expenses')) document.getElementById('acc-total-op-expenses').innerText = `$${opExpenses.toLocaleString()}`;
+    if (document.getElementById('acc-returns-total')) document.getElementById('acc-returns-total').innerText = `$${totalReturnsPaid.toLocaleString()}`;
+    if (document.getElementById('acc-returns-count')) document.getElementById('acc-returns-count').innerText = returns.length;
+    if (document.getElementById('acc-final-total-expenses')) document.getElementById('acc-final-total-expenses').innerText = `$${totalExpensesAcc.toLocaleString()}`;
+
+    const expenseCats = {};
+    transactions.filter(t => t.type === 'expense' && t.category !== 'DevoluciÃ³n').forEach(t => { expenseCats[t.category] = (expenseCats[t.category] || 0) + parseFloat(t.amount); });
+    let expHtml = '';
+    for (let cat in expenseCats) { expHtml += `<div class="report-row" style="font-size:0.85rem; padding-left:1rem; border-bottom:none;"><span>${cat}</span><span>$${expenseCats[cat].toLocaleString()}</span></div>`; }
+    if (document.getElementById('acc-expense-categories')) document.getElementById('acc-expense-categories').innerHTML = expHtml;
+
+    if (document.getElementById('acc-sales-total')) document.getElementById('acc-sales-total').innerText = `$${totalSales.toLocaleString()}`;
+    if (document.getElementById('acc-sales-count')) document.getElementById('acc-sales-count').innerText = sales.length;
+    if (document.getElementById('acc-sales-avg')) document.getElementById('acc-sales-avg').innerText = sales.length > 0 ? `$${(totalSales / sales.length).toLocaleString()}` : '$0';
+    if (document.getElementById('acc-total-other-income')) document.getElementById('acc-total-other-income').innerText = `$${otherIncome.toLocaleString()}`;
+    if (document.getElementById('acc-final-total-income')) document.getElementById('acc-final-total-income').innerText = `$${totalIncome.toLocaleString()}`;
+
+    const salesModel = {};
+    sales.forEach(s => { salesModel[s.model] = (salesModel[s.model] || 0) + parseFloat(s.price); });
+    let modelHtml = '';
+    Object.entries(salesModel).sort((a,b) => b[1] - a[1]).forEach(([mod, val]) => {
+        modelHtml += `<div class="report-row" style="font-size:0.85rem; padding-left:1rem; border-bottom:none;"><span>${mod}</span><span>$${val.toLocaleString()}</span></div>`;
+    });
+    if (document.getElementById('acc-sales-by-model')) document.getElementById('acc-sales-by-model').innerHTML = modelHtml || '<div style="font-size:0.8rem; color:var(--text-gray); padding-left:1rem;">N/A</div>';
+
+    const salesSource = {};
+    sales.forEach(s => { salesSource[s.source] = (salesSource[s.source] || 0) + parseFloat(s.price); });
+    let sourceHtml = '';
+    Object.entries(salesSource).sort((a,b) => b[1] - a[1]).forEach(([src, val]) => {
+        sourceHtml += `<div class="report-row" style="font-size:0.85rem; padding-left:1rem; border-bottom:none;"><span>${src}</span><span>$${val.toLocaleString()}</span></div>`;
+    });
+    if (document.getElementById('acc-sales-by-source')) document.getElementById('acc-sales-by-source').innerHTML = sourceHtml || '<div style="font-size:0.8rem; color:var(--text-gray); padding-left:1rem;">N/A</div>';
+
+    const incomeCats = {};
+    transactions.filter(t => t.type === 'income' && t.category !== 'Venta').forEach(t => { incomeCats[t.category] = (incomeCats[t.category] || 0) + parseFloat(t.amount); });
+    let incHtml = '';
+    for (let cat in incomeCats) { incHtml += `<div class="report-row" style="font-size:0.85rem; padding-left:1rem; border-bottom:none;"><span>${cat}</span><span>$${incomeCats[cat].toLocaleString()}</span></div>`; }
+    if (document.getElementById('acc-income-categories')) document.getElementById('acc-income-categories').innerHTML = incHtml;
+
+    if (document.getElementById('acc-res-gross')) document.getElementById('acc-res-gross').innerText = `$${grossProfit.toLocaleString()}`;
+    if (document.getElementById('acc-res-op')) document.getElementById('acc-res-op').innerText = `$${opProfit.toLocaleString()}`;
+    if (document.getElementById('acc-res-net')) document.getElementById('acc-res-net').innerText = `$${netProfit.toLocaleString()}`;
+    
+    const finalVal = document.getElementById('acc-res-final-value');
+    if (finalVal) {
+        finalVal.innerText = `$${netProfit.toLocaleString()}`;
+        finalVal.style.color = netProfit >= 0 ? '#047481' : 'var(--vibrant-red)';
+        document.getElementById('acc-res-final-margin').innerText = `Margen: ${marginNet.toFixed(1)}%`;
+        document.getElementById('acc-res-final-box').style.background = netProfit >= 0 ? 'rgba(4,116,129,0.05)' : 'rgba(238,66,78,0.05)';
+        
+        const progressFill = document.getElementById('acc-margin-progress-fill');
+        if (progressFill) {
+            const boundedMargin = Math.max(0, Math.min(marginNet, 100));
+            progressFill.style.width = `${boundedMargin}%`;
+            if (marginNet > 20) {
+                progressFill.style.background = '#047481';
+            } else if (marginNet >= 10) {
+                progressFill.style.background = '#B7791F';
+            } else {
+                progressFill.style.background = 'var(--vibrant-red)';
+            }
+        }
+    }
+
+    if (document.getElementById('acc-met-avg-ticket')) document.getElementById('acc-met-avg-ticket').innerText = sales.length > 0 ? `$${(totalSales / sales.length).toLocaleString()}` : '$0';
+    const topModelVal = Object.entries(salesModel).sort((a,b) => b[1] - a[1])[0];
+    if (document.getElementById('acc-met-top-model')) document.getElementById('acc-met-top-model').innerText = topModelVal ? topModelVal[0] : 'N/A';
+    const topSrcVal = Object.entries(salesSource).sort((a,b) => b[1] - a[1])[0];
+    if (document.getElementById('acc-met-top-source')) document.getElementById('acc-met-top-source').innerText = topSrcVal ? topSrcVal[0] : 'N/A';
+
+    const soldInPeriod = state.inventory.filter(i => i.status === 'Vendido' && sales.some(s => s.serial === i.serial));
+    let totalDays = 0;
+    soldInPeriod.forEach(i => {
+        const sale = sales.find(s => s.serial === i.serial);
+        if (sale) {
+            const start = parseDateLocal(i.entryDate);
+            const end = parseDateLocal(sale.saleDate);
+            totalDays += Math.floor((end - start) / (1000 * 60 * 60 * 24));
+        }
+    });
+    if (document.getElementById('acc-met-rotation')) document.getElementById('acc-met-rotation').innerText = soldInPeriod.length > 0 ? `${Math.round(totalDays / soldInPeriod.length)} dÃ­as` : '0 dÃ­as';
+
+    const stagnant = state.inventory.filter(i => {
+        if (i.status !== 'Disponible') return false;
+        const start = parseDateLocal(i.entryDate);
+        const days = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+        return days > 30;
+    });
+    if (document.getElementById('acc-met-stagnant')) document.getElementById('acc-met-stagnant').innerText = `${stagnant.length} equipos`;
+
+    const returnRate = totalSales > 0 ? (totalReturnsPaid / totalSales) * 100 : 0;
+    const rateEl = document.getElementById('acc-met-return-rate');
+    if (rateEl) {
+        rateEl.innerText = `${returnRate.toFixed(1)}%`;
+        rateEl.style.color = returnRate < 5 ? '#047481' : (returnRate < 15 ? '#B7791F' : 'var(--vibrant-red)');
+    }
+
+    renderAccountingTrace();
+    lucide.createIcons();
+}
+
+function renderAccountingTrace() {
+    const query = document.getElementById('traceSearch').value.toLowerCase().trim();
+    const tbody = document.getElementById('traceTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    const now = new Date();
+
+    let traceList = [...state.inventory];
+    traceList.sort((a, b) => {
+        const da = parseDateLocal(a.entryDate) || 0;
+        const db = parseDateLocal(b.entryDate) || 0;
+        return db - da;
+    });
+
+    traceList.forEach(i => {
+        if (query && !i.serial.toLowerCase().includes(query) && !i.model.toLowerCase().includes(query)) return;
+        const sale = state.sales.find(s => s.serial === i.serial);
+        const ret = (state.returns || []).find(r => r.serial === i.serial);
+        const costNum = parseFloat(i.cost) || 0;
+        const priceNum = sale ? (parseFloat(sale.price) || 0) : 0;
+        const utility = sale ? (priceNum - costNum) : 0;
+        const statusColor = i.status === 'Disponible' ? '#047481' : i.status === 'Vendido' ? 'var(--deep-blue)' : i.status === 'Devuelto' ? 'var(--vibrant-red)' : i.status === 'GarantÃ­a' ? '#B7791F' : '#718096';
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="font-size:0.75rem;">${i.entryDate}</td>
+                <td><strong>${i.model}</strong><br><small>${i.serial}</small></td>
+                <td>$${costNum.toLocaleString()}</td>
+                <td style="font-size:0.75rem;">${sale ? sale.saleDate : '-'}</td>
+                <td>$${priceNum.toLocaleString()}</td>
+                <td style="color:${utility >= 0 ? '#047481' : 'var(--vibrant-red)'}; font-weight:700;">
+                    ${sale ? '$' + utility.toLocaleString() : '-'}
+                </td>
+                <td style="font-size:0.75rem;">
+                    ${sale ? '<strong>' + sale.source + '</strong><br>' + sale.client : '-'}
+                </td>
+                <td>
+                    <span style="padding:0.2rem 0.5rem; border-radius:100px; font-size:0.7rem; font-weight:700; color:${statusColor}; background:${statusColor}15;">
+                        ${i.status}
+                    </span>
+                </td>
+                <td style="font-size:0.7rem; color:var(--text-gray);">
+                    ${ret ? '<strong>DEV:</strong> ' + ret.returnDate + '<br>' + ret.reason : (i.returnNote || '-')}
+                </td>
+            </tr>`;
+    });
+    lucide.createIcons();
+}
