@@ -1,16 +1,20 @@
 function renderSettings() {
     // Cargar datos personales
     if (currentUser) {
-        document.getElementById('set_full_name').value = currentUser.user_metadata?.full_name || '';
-        document.getElementById('set_business_name').value = currentUser.user_metadata?.business_name || '';
+        const fnEl = document.getElementById('set_full_name');
+        const bnEl = document.getElementById('set_business_name');
+        if (fnEl) fnEl.value = currentUser.user_metadata?.full_name || '';
+        if (bnEl) bnEl.value = currentUser.user_metadata?.business_name || '';
     }
 
     const list = document.getElementById('categoryList');
-    list.innerHTML = '';
-    state.settings.categories.forEach(c => {
-        const ec = escapeHtml(c);
-        list.innerHTML += `<span class="badge" style="background:var(--light-gray); color:var(--deep-blue); border:1px solid var(--border); display:flex; align-items:center; gap:0.5rem; padding:0.6rem 1rem;">${ec} <i data-lucide="x" size="14" style="cursor:pointer" onclick="removeCategory('${ec}')"></i></span>`;
-    });
+    if (list) {
+        list.innerHTML = '';
+        state.settings.categories.forEach(c => {
+            const ec = escapeHtml(c);
+            list.innerHTML += `<span class="badge" style="background:var(--light-gray); color:var(--deep-blue); border:1px solid var(--border); display:flex; align-items:center; gap:0.5rem; padding:0.6rem 1rem;">${ec} <i data-lucide="x" size="14" style="cursor:pointer" onclick="removeCategory('${ec}')"></i></span>`;
+        });
+    }
 
     const sourceList = document.getElementById('sourceList');
     if (sourceList) {
@@ -27,25 +31,29 @@ function renderSettings() {
     }
 
     const modelList = document.getElementById('modelList');
-    modelList.innerHTML = '';
-    Object.keys(state.settings.thresholds).forEach(m => {
-        const em = escapeHtml(m);
-        modelList.innerHTML += `
-            <span class="badge" style="background:var(--light-gray); 
-            color:var(--deep-blue); border:1px solid var(--border); 
-            display:flex; align-items:center; gap:0.5rem; 
-            padding:0.6rem 1rem;">
-                ${em}
-                <i data-lucide="x" size="14" style="cursor:pointer" 
-                   onclick="removeModel('${em}')"></i>
-            </span>`;
-    });
+    if (modelList) {
+        modelList.innerHTML = '';
+        Object.keys(state.settings.thresholds).forEach(m => {
+            const em = escapeHtml(m);
+            modelList.innerHTML += `
+                <span class="badge" style="background:var(--light-gray); 
+                color:var(--deep-blue); border:1px solid var(--border); 
+                display:flex; align-items:center; gap:0.5rem; 
+                padding:0.6rem 1rem;">
+                    ${em}
+                    <i data-lucide="x" size="14" style="cursor:pointer" 
+                       onclick="removeModel('${em}')"></i>
+                </span>`;
+        });
+    }
     const thresholds = document.getElementById('thresholdSettings');
-    thresholds.innerHTML = '';
-    Object.keys(state.settings.thresholds).forEach(m => {
-        const em = escapeHtml(m);
-        thresholds.innerHTML += `<div class="form-group"><label>${em}</label><input type="number" value="${state.settings.thresholds[m]}" onchange="updateThreshold('${em}', this.value)"></div>`;
-    });
+    if (thresholds) {
+        thresholds.innerHTML = '';
+        Object.keys(state.settings.thresholds).forEach(m => {
+            const em = escapeHtml(m);
+            thresholds.innerHTML += `<div class="form-group"><label>${em}</label><input type="number" value="${state.settings.thresholds[m]}" onchange="updateThreshold('${em}', this.value)"></div>`;
+        });
+    }
     lucide.createIcons();
 }
 

@@ -108,9 +108,9 @@ function renderAccounting() {
         else { marginEl.style.color = 'var(--vibrant-red)'; marginCard.style.borderBottom = "4px solid var(--vibrant-red)"; }
     }
 
-    if (document.getElementById('acc-merch-opening')) document.getElementById('acc-merch-opening').innerText = `$${openingStock.toLocaleString()}`;
-    if (document.getElementById('acc-merch-closing')) document.getElementById('acc-merch-closing').innerText = `$${closingStock.toLocaleString()}`;
-    if (document.getElementById('acc-merch-stagnant-val')) document.getElementById('acc-merch-stagnant-val').innerText = `$${stagnantStockValue.toLocaleString()}`;
+    if (document.getElementById('acc-opening-stock-cost')) document.getElementById('acc-opening-stock-cost').innerText = `$${openingStock.toLocaleString()}`;
+    if (document.getElementById('acc-merch-available')) document.getElementById('acc-merch-available').innerText = `$${closingStock.toLocaleString()}`;
+    if (document.getElementById('acc-stagnant-value')) document.getElementById('acc-stagnant-value').innerText = `$${stagnantStockValue.toLocaleString()}`;
 
     if (document.getElementById('acc-merch-purchased')) document.getElementById('acc-merch-purchased').innerText = `$${costOfInventoryPurchased.toLocaleString()}`;
     if (document.getElementById('acc-merch-cost-sold')) document.getElementById('acc-merch-cost-sold').innerText = `$${costOfMerchSold.toLocaleString()}`;
@@ -162,10 +162,12 @@ function renderAccounting() {
     if (finalVal) {
         finalVal.innerText = `$${netProfit.toLocaleString()}`;
         finalVal.style.color = netProfit >= 0 ? '#047481' : 'var(--vibrant-red)';
-        document.getElementById('acc-res-final-margin').innerText = `Margen: ${marginNet.toFixed(1)}%`;
-        document.getElementById('acc-res-final-box').style.background = netProfit >= 0 ? 'rgba(4,116,129,0.05)' : 'rgba(238,66,78,0.05)';
+        const marginLabel = document.getElementById('acc-res-final-margin');
+        if (marginLabel) marginLabel.innerText = `Margen: ${marginNet.toFixed(1)}%`;
+        const finalBox = document.getElementById('acc-res-final-box');
+        if (finalBox) finalBox.style.background = netProfit >= 0 ? 'rgba(4,116,129,0.05)' : 'rgba(238,66,78,0.05)';
         
-        const progressFill = document.getElementById('acc-margin-progress-fill');
+        const progressFill = document.getElementById('acc-margin-bar');
         if (progressFill) {
             const boundedMargin = Math.max(0, Math.min(marginNet, 100));
             progressFill.style.width = `${boundedMargin}%`;

@@ -45,7 +45,8 @@ if (invForm) invForm.onsubmit = function (e) {
 };
 
 function renderInventory() {
-    const search = document.getElementById('searchInventory').value.toLowerCase();
+    const searchInput = document.getElementById('searchInventory');
+    const search = searchInput ? searchInput.value.toLowerCase() : '';
     const modelFilter = document.getElementById('filterModelHidden') ?
         document.getElementById('filterModelHidden').value : '';
     const invPeriod = document.getElementById('filterInvPeriod')
@@ -57,6 +58,7 @@ function renderInventory() {
     const invDateRange = getDateRangeFilter(invPeriod, invFrom, invTo);
 
     const tbody = document.querySelector('#inventoryTable tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     let filteredInv = state.inventory.filter(i => {

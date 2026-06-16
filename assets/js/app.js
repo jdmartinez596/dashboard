@@ -201,11 +201,13 @@ function subscribeToRealtime() {
 // ── Navigation ────────────────────────────────────────────────
 function showView(viewId) {
     const sidebar = document.querySelector('.sidebar');
-    if (sidebar.classList.contains('sidebar-open')) toggleSidebar();
+    if (sidebar && sidebar.classList.contains('sidebar-open')) toggleSidebar();
 
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
+    const viewEl = document.getElementById(viewId);
+    if (!viewEl) return;
+    viewEl.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(item => {
         if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(viewId)) item.classList.add('active');
     });
@@ -424,7 +426,12 @@ function initCharts() {
     if (categoryChartInstance) { categoryChartInstance.destroy(); categoryChartInstance = null; }
     if (sourceChart) { sourceChart.destroy(); sourceChart = null; }
 
-    const ctxSales = document.getElementById('salesTrendChart').getContext('2d');
+    const salesCanvas = document.getElementById('salesTrendChart');
+    const catCanvas = document.getElementById('categoryChart');
+    const sourceCanvas = document.getElementById('sourceChart');
+    if (!salesCanvas || !catCanvas || !sourceCanvas) return;
+
+    const ctxSales = salesCanvas.getContext('2d');
     salesChart = new Chart(ctxSales, {
         type: 'line',
         data: { labels: [], datasets: [{ label: 'Ventas ($)', data: [], borderColor: '#121E6C', backgroundColor: 'rgba(18,30,108,0.1)', fill: true, tension: 0.4 }] },
@@ -435,7 +442,7 @@ function initCharts() {
         }
     });
 
-    const ctxCat = document.getElementById('categoryChart').getContext('2d');
+    const ctxCat = catCanvas.getContext('2d');
     categoryChartInstance = new Chart(ctxCat, {
         type: 'bar',
         data: { labels: [], datasets: [{ label: 'Ingresos', data: [], backgroundColor: '#047481' }, { label: 'Egresos', data: [], backgroundColor: '#EE424E' }] },
@@ -447,7 +454,7 @@ function initCharts() {
         }
     });
 
-    const ctxSource = document.getElementById('sourceChart').getContext('2d');
+    const ctxSource = sourceCanvas.getContext('2d');
     sourceChart = new Chart(ctxSource, {
         type: 'doughnut',
         data: { labels: [], datasets: [{ data: [], backgroundColor: ['#121E6C', '#EE424E', '#919FDC', '#047481', '#647481', '#E2E8F0'], borderWidth: 0 }] },
@@ -483,12 +490,14 @@ function updateChartsData() {
     const allCats = Array.from(new Set([...Object.keys(incomeData), ...Object.keys(expenseData)]));
 
     if (allCats.length === 0) {
-        document.getElementById('noDataText').style.display = 'block';
+        const noData = document.getElementById('noDataText');
+        if (noData) noData.style.display = 'block';
         categoryChartInstance.data.labels = [];
         categoryChartInstance.data.datasets[0].data = [];
         categoryChartInstance.data.datasets[1].data = [];
     } else {
-        document.getElementById('noDataText').style.display = 'none';
+        const noData = document.getElementById('noDataText');
+        if (noData) noData.style.display = 'none';
         categoryChartInstance.data.labels = allCats;
         categoryChartInstance.data.datasets[0].data = allCats.map(c => incomeData[c] || 0);
         categoryChartInstance.data.datasets[1].data = allCats.map(c => expenseData[c] || 0);
@@ -503,31 +512,8 @@ function updateChartsData() {
 }
 
 // ── Laser Scanner ─────────────────────────────────────────────
-(function initLaserScanner() {
-    let laserBuffer = '';
-    let laserTimer = null;
-    const LASER_THRESHOLD_MS = 80;
-
-    document.addEventListener('keydown', function (e) {
-        const active = document.activeElement;
-        const isLaserInput = active && active.id === 'laserInput';
-        const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT') && !isLaserInput;
-        if (isTyping) return;
-
-        if (e.key === 'Enter' && laserBuffer.length > 3) {
-            handleLaserScan(laserBuffer.trim());
-            laserBuffer = '';
-            clearTimeout(laserTimer);
-            return;
-        }
-
-        if (e.key.length === 1) {
-            laserBuffer += e.key;
-            clearTimeout(laserTimer);
-            laserTimer = setTimeout(() => { laserBuffer = ''; }, LASER_THRESHOLD_MS * 20);
-        }
-    });
-})();
+// initLaserScanner() y handleLaserScan() se encuentran en assets/js/scanner.js
+// toggleLaserBar() y hideLaserBar() también están en scanner.js y lo sobrescriben
 
 function toggleLaserBar() {
     const bar = document.getElementById('laserBar');
@@ -729,7 +715,8 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
                 if (welcomeEl) welcomeEl.innerText = fullName ? `¡Bienvenido, ${fullName}!` : 'Resumen Ejecutivo';
 
                 document.getElementById('loginView').style.display = 'none';
-                document.getElementById('appView').style.display = 'block';
+                const appView = document.getElementById('appView');
+                if (appView) appView.style.display = 'block';
                 loadState();
             }
         } else if (event === 'SIGNED_OUT') {

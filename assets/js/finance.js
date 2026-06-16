@@ -28,20 +28,23 @@ if (txForm) txForm.onsubmit = function (e) {
 };
 
 function renderFinance() {
-    const typeFilter = document.getElementById('filterFinanceType').value;
-    const catFilter = document.getElementById('filterFinanceCategory').value;
+    const typeEl = document.getElementById('filterFinanceType');
+    const catEl = document.getElementById('filterFinanceCategory');
+    if (!typeEl || !catEl) return;
+    const typeFilter = typeEl.value;
+    const catFilter = catEl.value;
     const tbody = document.querySelector('#financeTable tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     
     // Reconstruir dropdown solo si es necesario (cuando cambia la vista)
-    const catDropdown = document.getElementById('filterFinanceCategory');
-    if (catDropdown.options.length <= 1) {
-        catDropdown.innerHTML = '<option value="">Todas las categorías</option>';
+    if (catEl.options.length <= 1) {
+        catEl.innerHTML = '<option value="">Todas las categorías</option>';
         state.settings.categories.forEach(c => {
             const ec = escapeHtml(c);
-            catDropdown.innerHTML += `<option value="${ec}">${ec}</option>`;
+            catEl.innerHTML += `<option value="${ec}">${ec}</option>`;
         });
-        catDropdown.value = catFilter;
+        catEl.value = catFilter;
     }
 
     const filteredTxList = state.transactions.filter(t => {

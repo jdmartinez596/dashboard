@@ -23,7 +23,8 @@ function checkLoginRateLimit() {
 }
 
 // Auth UI Toggle
-document.getElementById('toggleAuth').onclick = (e) => {
+const toggleLink = document.getElementById('toggleAuth');
+if (toggleLink) toggleLink.onclick = (e) => {
     e.preventDefault();
     isRegisterMode = !isRegisterMode;
     
@@ -57,7 +58,8 @@ document.getElementById('toggleAuth').onclick = (e) => {
 };
 
 // Auth Listeners
-document.getElementById('loginForm').onsubmit = async (e) => {
+const loginForm = document.getElementById('loginForm');
+if (loginForm) loginForm.onsubmit = async (e) => {
     e.preventDefault();
     const email = document.getElementById('auth_email').value;
     const password = document.getElementById('auth_password').value;

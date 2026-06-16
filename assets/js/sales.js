@@ -149,13 +149,15 @@ if (saleForm) saleForm.onsubmit = function (e) {
 };
 
 function renderSales() {
-    const search = document.getElementById('searchSales').value.toLowerCase().trim();
+    const searchInput = document.getElementById('searchSales');
+    const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
     const salePeriod = document.getElementById('filterSalePeriod') ? document.getElementById('filterSalePeriod').value : '';
     const saleFrom = document.getElementById('filterSaleFrom') ? document.getElementById('filterSaleFrom').value : '';
     const saleTo = document.getElementById('filterSaleTo') ? document.getElementById('filterSaleTo').value : '';
     const saleDateRange = getDateRangeFilter(salePeriod, saleFrom, saleTo);
 
     const tbody = document.querySelector('#salesTable tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     let filtered = state.sales.filter(s => {
