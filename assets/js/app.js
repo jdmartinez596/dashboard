@@ -184,7 +184,7 @@ async function testSupabaseConnection() {
     try {
         const { data, error } = await supabaseClient
             .from('dashboard_state')
-            .select('id')
+            .select('user_id')
             .limit(1);
         if (error) {
             console.error('SUPABASE TEST FALLÓ:', error);
