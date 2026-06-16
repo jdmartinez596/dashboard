@@ -177,6 +177,7 @@ async function loadState() {
     showSyncStatus('synced');
     subscribeToRealtime();
     testSupabaseConnection();
+    syncToSupabase();
 }
 
 async function testSupabaseConnection() {
