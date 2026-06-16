@@ -44,12 +44,21 @@ async function saveState() {
                 data: state,
                 updated_at: new Date().toISOString()
             };
+            if (typeof supabaseClient === 'undefined') {
+                console.error('supabaseClient NO EXISTE');
+                showToast('Error: Supabase no está configurado', 'error');
+                showSyncStatus('error');
+                return;
+            }
             console.log('Supabase guardando:', rowId, 'items:', 
                 'inv:', state.inventory?.length, 'ventas:', state.sales?.length);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
             const { data: upsertData, error } = await supabaseClient
                 .from('dashboard_state')
                 .upsert(payload, { onConflict: 'id' })
                 .select();
+            clearTimeout(timeoutId);
 
             if (error) {
                 console.error('Supabase error detallado:', error);
@@ -60,6 +69,7 @@ async function saveState() {
             showSyncStatus('synced');
         } catch (err) {
             console.warn('Supabase save failed:', err);
+            showToast('Error al sincronizar: ' + (err.message || err), 'error');
             showSyncStatus('error');
         }
     } else {
@@ -153,6 +163,27 @@ async function loadState() {
     refreshUI();
     showSyncStatus('synced');
     subscribeToRealtime();
+    testSupabaseConnection();
+}
+
+async function testSupabaseConnection() {
+    if (!currentUser || !isOnline) return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('dashboard_state')
+            .select('id')
+            .limit(1);
+        if (error) {
+            console.error('SUPABASE TEST FALLÓ:', error);
+            showToast('Supabase: ' + error.message + '. Los datos se guardan solo localmente.', 'error');
+        } else {
+            console.log('SUPABASE CONECTADO');
+            showToast('Supabase conectado correctamente', 'success');
+        }
+    } catch (err) {
+        console.error('SUPABASE TEST ERROR:', err);
+        showToast('Supabase: No se pudo conectar. Verifica tu conexión.', 'error');
+    }
 }
 
 async function syncToSupabase() {
