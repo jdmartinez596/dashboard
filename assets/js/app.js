@@ -38,16 +38,25 @@ async function saveState() {
         try {
             showSyncStatus('syncing');
             const rowId = 'main_' + currentUser.id;
-            const { error } = await supabaseClient
+            const payload = {
+                id: rowId,
+                user_id: currentUser.id,
+                data: state,
+                updated_at: new Date().toISOString()
+            };
+            console.log('Supabase guardando:', rowId, 'items:', 
+                'inv:', state.inventory?.length, 'ventas:', state.sales?.length);
+            const { data: upsertData, error } = await supabaseClient
                 .from('dashboard_state')
-                .upsert({
-                    id: rowId,
-                    user_id: currentUser.id,
-                    data: state,
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'id' });
+                .upsert(payload, { onConflict: 'id' })
+                .select();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase error detallado:', error);
+                showToast('Error de sincronización: ' + error.message, 'error');
+                throw error;
+            }
+            console.log('Supabase guardado OK:', upsertData);
             showSyncStatus('synced');
         } catch (err) {
             console.warn('Supabase save failed:', err);
@@ -55,6 +64,7 @@ async function saveState() {
         }
     } else {
         pendingSync = true;
+        console.warn('Offline, pendiente de sincronizar');
     }
 }
 
@@ -80,13 +90,19 @@ async function loadState() {
     if (isOnline) {
         try {
             showSyncStatus('syncing');
+            console.log('Cargando desde Supabase para user:', currentUser.id);
             const { data, error } = await supabaseClient
                 .from('dashboard_state')
                 .select('data, updated_at')
                 .eq('user_id', currentUser.id)
                 .single();
 
-            if (!error && data && data.data &&
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error cargando de Supabase:', error);
+                showToast('Error al cargar datos: ' + error.message, 'error');
+            }
+
+            if (data && data.data &&
                 Object.keys(data.data).length > 0) {
 
                 const cloudTime = new Date(data.updated_at).getTime();
@@ -94,11 +110,22 @@ async function loadState() {
                     localStorage.getItem(localKey + '_time') || '0'
                 );
 
+                console.log('Datos desde Supabase:', 
+                    'cloudTime:', cloudTime, 
+                    'localTime:', localTime,
+                    'items:', data.data.inventory?.length,
+                    'ventas:', data.data.sales?.length);
+
                 if (cloudTime >= localTime) {
                     state = data.data;
                     localStorage.setItem(localKey, JSON.stringify(state));
                     localStorage.setItem(localKey + '_time', cloudTime.toString());
+                    console.log('Usando datos de la nube');
+                } else {
+                    console.log('Datos locales son más recientes, usando local');
                 }
+            } else {
+                console.log('Sin datos en Supabase aún');
             }
         } catch (err) {
             console.warn('Supabase load failed, usando localStorage:', err);

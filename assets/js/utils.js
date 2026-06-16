@@ -119,6 +119,30 @@ function showSyncStatus(status) {
     lucide.createIcons();
 }
 
+function checkSyncStatus() {
+    const status = navigator.onLine ? 'online' : 'offline';
+    const msg = 'Estado de conexión: ' + (status === 'online' ? 'Conectado' : 'Sin conexión') +
+        '\nUsuario: ' + (currentUser ? currentUser.email : 'No autenticado') +
+        '\nSinc. pendiente: ' + pendingSync +
+        '\n\nAbre la consola (F12) para ver más detalles.';
+    alert(msg);
+    console.log('=== CHECK SYNC ===');
+    console.log('navigator.onLine:', navigator.onLine);
+    console.log('currentUser:', currentUser?.email);
+    console.log('pendingSync:', pendingSync);
+    console.log('state inventory:', state.inventory?.length);
+    console.log('state sales:', state.sales?.length);
+    console.log('state transactions:', state.transactions?.length);
+    console.log('state returns:', state.returns?.length);
+    if (currentUser) {
+        const key = LOCAL_STORAGE_KEY + '_' + currentUser.id;
+        const localData = localStorage.getItem(key);
+        const localTime = localStorage.getItem(key + '_time');
+        console.log('localStorage data exists:', !!localData);
+        console.log('localStorage time:', localTime);
+    }
+}
+
 // --- Toast Notification System ---
 function showToast(message, type) {
     let container = document.getElementById('toastContainer');
