@@ -35,46 +35,68 @@ async function saveState() {
 
     // Sincronizar con Supabase
     if (isOnline) {
-        try {
-            showSyncStatus('syncing');
-            const rowId = 'main_' + currentUser.id;
-            const payload = {
-                id: rowId,
-                user_id: currentUser.id,
-                data: state,
-                updated_at: new Date().toISOString()
-            };
-            if (typeof supabaseClient === 'undefined') {
-                console.error('supabaseClient NO EXISTE');
-                showToast('Error: Supabase no está configurado', 'error');
-                showSyncStatus('error');
-                return;
-            }
-            console.log('Supabase guardando:', rowId, 'items:', 
-                'inv:', state.inventory?.length, 'ventas:', state.sales?.length);
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
-            const { data: upsertData, error } = await supabaseClient
-                .from('dashboard_state')
-                .upsert(payload, { onConflict: 'id' })
-                .select();
-            clearTimeout(timeoutId);
-
-            if (error) {
-                console.error('Supabase error detallado:', error);
-                showToast('Error de sincronización: ' + error.message, 'error');
-                throw error;
-            }
-            console.log('Supabase guardado OK:', upsertData);
-            showSyncStatus('synced');
-        } catch (err) {
-            console.warn('Supabase save failed:', err);
-            showToast('Error al sincronizar: ' + (err.message || err), 'error');
-            showSyncStatus('error');
-        }
+        await syncToSupabase();
     } else {
         pendingSync = true;
         console.warn('Offline, pendiente de sincronizar');
+    }
+}
+
+async function syncToSupabase() {
+    if (!currentUser || !isOnline) {
+        pendingSync = true;
+        return;
+    }
+
+    if (typeof supabaseClient === 'undefined') {
+        console.error('supabaseClient NO EXISTE');
+        showToast('Error: Supabase no está configurado', 'error');
+        showSyncStatus('error');
+        return;
+    }
+
+    try {
+        showSyncStatus('syncing');
+        const payload = {
+            user_id: currentUser.id,
+            data: state,
+            updated_at: new Date().toISOString()
+        };
+
+        console.log('Supabase guardando para user:', currentUser.id,
+            'inv:', state.inventory?.length, 'ventas:', state.sales?.length);
+
+        // Estrategia: intentar insert, si ya existe -> update
+        // Funciona con cualquier esquema de tabla (id auto-incremental o texto)
+        const { error: insertError } = await supabaseClient
+            .from('dashboard_state')
+            .insert(payload);
+
+        if (insertError && insertError.code === '23505') {
+            // Duplicado — actualizar registro existente
+            console.log('Registro ya existe, actualizando...');
+            const { error: updateError } = await supabaseClient
+                .from('dashboard_state')
+                .update(payload)
+                .eq('user_id', currentUser.id);
+
+            if (updateError) throw updateError;
+        } else if (insertError) {
+            // Otro error — podría ser RLS o tabla no existe
+            throw insertError;
+        } else {
+            console.log('Insertado nuevo registro');
+        }
+
+        pendingSync = false;
+        showSyncStatus('synced');
+        console.log('Supabase sincronizado OK');
+    } catch (err) {
+        console.error('Supabase sync error:', err);
+        showToast('Error Supabase: ' + (err.message || err) +
+            '. Los datos están guardados localmente.', 'error');
+        showSyncStatus('error');
+        pendingSync = true;
     }
 }
 
@@ -90,13 +112,11 @@ async function loadState() {
     if (!currentUser) return;
     const localKey = LOCAL_STORAGE_KEY + '_' + currentUser.id;
 
-    // Cargar localStorage como fallback inmediato
     const saved = localStorage.getItem(localKey);
     if (saved) {
         try { state = JSON.parse(saved); } catch (e) { }
     }
 
-    // Si hay conexión, esperar datos de Supabase
     if (isOnline) {
         try {
             showSyncStatus('syncing');
@@ -112,17 +132,13 @@ async function loadState() {
                 showToast('Error al cargar datos: ' + error.message, 'error');
             }
 
-            if (data && data.data &&
-                Object.keys(data.data).length > 0) {
-
+            if (data && data.data && Object.keys(data.data).length > 0) {
                 const cloudTime = new Date(data.updated_at).getTime();
                 const localTime = parseInt(
                     localStorage.getItem(localKey + '_time') || '0'
                 );
-
-                console.log('Datos desde Supabase:', 
-                    'cloudTime:', cloudTime, 
-                    'localTime:', localTime,
+                console.log('Datos desde Supabase:',
+                    'cloudTime:', cloudTime, 'localTime:', localTime,
                     'items:', data.data.inventory?.length,
                     'ventas:', data.data.sales?.length);
 
@@ -132,7 +148,7 @@ async function loadState() {
                     localStorage.setItem(localKey + '_time', cloudTime.toString());
                     console.log('Usando datos de la nube');
                 } else {
-                    console.log('Datos locales son más recientes, usando local');
+                    console.log('Datos locales más recientes, usando local');
                 }
             } else {
                 console.log('Sin datos en Supabase aún');
@@ -142,14 +158,12 @@ async function loadState() {
         }
     }
 
-    // Inicializar arrays si no existen (migración segura)
     if (!state.inventory)    state.inventory    = [];
     if (!state.sales)        state.sales        = [];
     if (!state.transactions) state.transactions = [];
     if (!state.returns)      state.returns      = [];
     if (!state.settings)     state.settings     = getDefaultSettings();
 
-    // Actualizar fecha en el header
     const now = new Date();
     const currentDateEl = document.getElementById('currentDate');
     if (currentDateEl) {
@@ -158,7 +172,6 @@ async function loadState() {
         });
     }
 
-    // Solo ahora, con datos ya en state, inicializar UI
     initCharts();
     refreshUI();
     showSyncStatus('synced');
@@ -183,34 +196,6 @@ async function testSupabaseConnection() {
     } catch (err) {
         console.error('SUPABASE TEST ERROR:', err);
         showToast('Supabase: No se pudo conectar. Verifica tu conexión.', 'error');
-    }
-}
-
-async function syncToSupabase() {
-    if (!currentUser || !isOnline) {
-        pendingSync = true;
-        return;
-    }
-
-    try {
-        showSyncStatus('syncing');
-        const rowId = 'main_' + currentUser.id;
-        const { error } = await supabaseClient
-            .from('dashboard_state')
-            .upsert({
-                id: rowId,
-                user_id: currentUser.id,
-                data: state,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'id' });
-
-        if (error) throw error;
-        pendingSync = false;
-        showSyncStatus('synced');
-    } catch (err) {
-        console.error('Sync error:', err);
-        showSyncStatus('error');
-        pendingSync = true;
     }
 }
 

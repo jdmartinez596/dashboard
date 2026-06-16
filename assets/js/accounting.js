@@ -219,7 +219,9 @@ function renderAccounting() {
 }
 
 function renderAccountingTrace() {
-    const query = document.getElementById('traceSearch').value.toLowerCase().trim();
+    const traceSearch = document.getElementById('traceSearch');
+    if (!traceSearch) return;
+    const query = traceSearch.value.toLowerCase().trim();
     const tbody = document.getElementById('traceTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
