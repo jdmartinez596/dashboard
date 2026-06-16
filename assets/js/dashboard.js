@@ -19,12 +19,12 @@ function updateDashboard() {
     const incomePrevM = salesPrevM.reduce((a, s) => a + (parseFloat(s.price) || 0), 0) + otherIncomePrevM;
 
     const costCurM = salesCurM.reduce((a, s) => a + getSaleCost(s), 0);
-    const expCurM = (state.transactions || []).filter(t => t.type === 'expense' && t.category !== 'DevoluciÃ³n' && filterCurM(t.date)).reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
+    const expCurM = (state.transactions || []).filter(t => t.type === 'expense' && t.category !== 'Devolución' && filterCurM(t.date)).reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
     const returnsCurM = (state.returns || []).filter(r => filterCurM(r.returnDate)).reduce((a, r) => a + (parseFloat(r.salePrice) || 0), 0);
     const profitCurM = incomeCurM - costCurM - expCurM - returnsCurM;
     
     const costPrevM = salesPrevM.reduce((a, s) => a + getSaleCost(s), 0);
-    const expPrevM = (state.transactions || []).filter(t => t.type === 'expense' && t.category !== 'DevoluciÃ³n' && filterPrevM(t.date)).reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
+    const expPrevM = (state.transactions || []).filter(t => t.type === 'expense' && t.category !== 'Devolución' && filterPrevM(t.date)).reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
     const returnsPrevM = (state.returns || []).filter(r => filterPrevM(r.returnDate)).reduce((a, r) => a + (parseFloat(r.salePrice) || 0), 0);
     const profitPrevM = incomePrevM - costPrevM - expPrevM - returnsPrevM;
 
@@ -50,9 +50,9 @@ function updateDashboard() {
     const kpiStock = document.getElementById('kpi-stock');
     if (kpiStock) kpiStock.innerText = state.inventory.filter(i => i.status === 'Disponible').length;
 
-    // RotaciÃ³n promedio
+    // Rotación promedio
     const soldItems = state.inventory.filter(i => i.status === 'Vendido');
-    let rotationText = '0 dÃ­as';
+    let rotationText = '0 días';
     if (soldItems.length > 0) {
         let totalDays = 0;
         let count = 0;
@@ -65,7 +65,7 @@ function updateDashboard() {
                 count++;
             }
         });
-        if (count > 0) rotationText = `${Math.round(totalDays / count)} dÃ­as`;
+        if (count > 0) rotationText = `${Math.round(totalDays / count)} días`;
     }
     const kpiRotation = document.getElementById('kpi-rotation');
     if (kpiRotation) kpiRotation.innerText = rotationText;
@@ -105,7 +105,7 @@ function renderStockBars() {
 
         const barColor = isBelowThreshold ? 'var(--vibrant-red)' : '#047481';
         const countColor = isBelowThreshold ? 'var(--vibrant-red)' : '#047481';
-        const alertText = isBelowThreshold ? 'âš  Stock bajo' : 'âœ“ Stock OK';
+        const alertText = isBelowThreshold ? '⚠ Stock bajo' : '✓ Stock OK';
         const alertColor = isBelowThreshold ? 'var(--vibrant-red)' : '#047481';
 
         const eModel = escapeHtml(model);
@@ -154,10 +154,10 @@ function renderStockBars() {
     if (summaryEl) {
         if (bajosCount === 0) {
             summaryEl.style.color = '#047481';
-            summaryEl.innerText = 'âœ“ Todo el stock en niveles normales';
+            summaryEl.innerText = '✓ Todo el stock en niveles normales';
         } else {
             summaryEl.style.color = 'var(--vibrant-red)';
-            summaryEl.innerText = `âš  ${bajosCount} modelo${bajosCount > 1 ? 's' : ''} con stock bajo`;
+            summaryEl.innerText = `⚠ ${bajosCount} modelo${bajosCount > 1 ? 's' : ''} con stock bajo`;
         }
     }
 }

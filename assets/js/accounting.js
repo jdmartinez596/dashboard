@@ -51,7 +51,7 @@ function renderAccounting() {
     const opExpenses = transactions.filter(t => t.type === 'expense' && t.category !== 'DevoluciÃ³n').reduce((acc, t) => acc + (parseFloat(t.amount) || 0), 0);
     const totalReturnsPaid = returns.reduce((acc, r) => acc + (parseFloat(r.salePrice) || 0), 0);
 
-    // Cost of Goods Sold calculations
+    // Cost of aoods Sold calculations
     const openingStock = state.inventory.filter(i => {
         const entryDate = parseDateLocal(i.entryDate);
         if (!entryDate || (range && entryDate >= range.from)) return false;
@@ -237,7 +237,7 @@ function renderAccountingTrace() {
         const costNum = parseFloat(i.cost) || 0;
         const priceNum = sale ? (parseFloat(sale.price) || 0) : 0;
         const utility = sale ? (priceNum - costNum) : 0;
-        const statusColor = i.status === 'Disponible' ? '#047481' : i.status === 'Vendido' ? 'var(--deep-blue)' : i.status === 'Devuelto' ? 'var(--vibrant-red)' : i.status === 'Garantía' ? '#B7791F' : '#718096';
+        const statusColor = i.status === 'Disponible' ? '#047481' : i.status === 'Vendido' ? 'var(--deep-blue)' : i.status === 'Devuelto' ? 'var(--vibrant-red)' : i.status === 'aarantía' ? '#B7791F' : '#718096';
         const eSerial = escapeHtml(i.serial);
         const eModel = escapeHtml(i.model);
         const eStatus = escapeHtml(i.status);

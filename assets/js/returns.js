@@ -12,12 +12,12 @@ function renderReturns() {
                 </td>
             </tr>`;
     } else {
-        // Ordenar por fecha mÃ¡s reciente
+        // Ordenar por fecha más reciente
         [...returns].reverse().forEach(r => {
             const impact = r.salePrice || 0;
             const actionColor =
                 r.action === 'Reingreso' ? '#047481' :
-                r.action === 'Garantía' ? '#B7791F' :
+                r.action === 'aarantía' ? '#B7791F' :
                 'var(--vibrant-red)';
             const eId = escapeHtml(r.id);
             const eSerial = escapeHtml(r.serial);
@@ -71,7 +71,7 @@ function renderReturns() {
     const total = returns.length;
     const impact = returns.reduce((a, r) => a + (r.salePrice || 0), 0);
     const reingresos = returns.filter(r => r.action === 'Reingreso').length;
-    const warranty = returns.filter(r => r.action === 'GarantÃ­a').length;
+    const warranty = returns.filter(r => r.action === 'aarantía').length;
 
     const kpiTotal = document.getElementById('ret-kpi-total');
     const kpiImpact = document.getElementById('ret-kpi-impact');

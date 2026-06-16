@@ -32,7 +32,7 @@ async function startScanner(targetId) {
         qrbox: (vw, vh) => ({
             width: Math.min(vw * 0.92, 480),
             height: Math.max(Math.round(Math.min(vw * 0.92, 480) * 0.38), 100)
-            // 38% del ancho: captura cÃ³digos altos y bajos
+            // 38% del ancho: captura códigos altos y bajos
         }),
         aspectRatio: 1.7778,
         formatsToSupport: [
@@ -85,16 +85,16 @@ async function startScanner(targetId) {
         }
     } catch(err) {
         console.error('Camera error:', err);
-        let msg = 'Error al iniciar cÃ¡mara.';
+        let msg = 'Error al iniciar cámara.';
         
         if (window.location.protocol === 'file:') {
-            msg = 'La cÃ¡mara estÃ¡ bloqueada en archivos locales por seguridad del navegador.';
+            msg = 'La cámara está bloqueada en archivos locales por seguridad del navegador.';
         } else if (err.name === 'NotAllowedError') {
-            msg = 'Permiso de cÃ¡mara denegado. Permite el acceso en configuraciÃ³n.';
+            msg = 'Permiso de cámara denegado. Permite el acceso en configuración.';
         } else if (err.name === 'NotFoundError') {
-            msg = 'No se encontrÃ³ ninguna cÃ¡mara.';
+            msg = 'No se encontró ninguna cámara.';
         } else if (err.name === 'NotReadableError') {
-            msg = 'La cÃ¡mara estÃ¡ en uso por otra app.';
+            msg = 'La cámara está en uso por otra app.';
         }
         
         showScannerErrorUI(msg);
@@ -142,19 +142,19 @@ function showScannerErrorUI(msg) {
                 text-align: center;
                 line-height: 1.4;
             ">
-                Para usar la cÃ¡mara, abre el dashboard desde un servidor (localhost) o sÃºbelo a un hosting.<br>
-                <b>Mientras tanto, puedes usar la opciÃ³n de "Subir Foto".</b>
+                Para usar la cámara, abre el dashboard desde un servidor (localhost) o súbelo a un hosting.<br>
+                <b>Mientras tanto, puedes usar la opción de "Subir Foto".</b>
             </p>
         </div>`;
     lucide.createIcons();
 }
 
-// FunciÃ³n llamada al detectar â€” inserciÃ³n INMEDIATA sin confirmaciÃ³n
+// Función llamada al detectar — inserción INMEDIATA sin confirmación
 function onBarcodeDetected(decodedText) {
     if (!scannerActive) return;
     scannerActive = false;
 
-    // Feedback auditivo y tÃ¡ctil
+    // Feedback auditivo y táctil
     playSuccessBeep();
 
     const cleaned = cleanBarcode(decodedText);
@@ -195,7 +195,7 @@ function closeScanner() {
     document.getElementById('scannerModal').style.display = 'none';
     scannerActive = false;
 
-    // Detener cÃ¡mara en segundo plano sin bloquear UI
+    // Detener cámara en segundo plano sin bloquear UI
     if (html5QrCode) {
         const instance = html5QrCode;
         html5QrCode = null;
@@ -204,21 +204,21 @@ function closeScanner() {
                 if (instance.isScanning) await instance.stop();
                 instance.clear();
             } catch(e) {}
-            // Limpiar reader para prÃ³xima apertura
+            // Limpiar reader para próxima apertura
             const readerEl = document.getElementById('reader');
             if (readerEl) readerEl.innerHTML = '';
         }, 100);
     }
 }
 
-// Alias para el botÃ³n X y "Entrada Manual" del modal
+// Alias para el botón X y "Entrada Manual" del modal
 function stopScanner() {
     closeScanner();
 }
 
 async function switchCamera() {
     if (!cameras || cameras.length < 2) {
-        alert('Solo se detectÃ³ una cÃ¡mara.');
+        alert('Solo se detectó una cámara.');
         return;
     }
     const currentIndex = cameras.findIndex(c => c.id === currentCameraId);
@@ -275,7 +275,7 @@ function toggleContrast() {
     const video = document.querySelector('#reader video');
     const btn = document.getElementById('contrastBtn');
     if (!video) {
-        alert('Inicia la cÃ¡mara primero.');
+        alert('Inicia la cámara primero.');
         return;
     }
     contrastActive = !contrastActive;
@@ -323,7 +323,7 @@ async function scanFromImage(event) {
             Analizando imagen...
         </div>`;
 
-    // Agregar animaciÃ³n de spin si no existe
+    // Agregar animación de spin si no existe
     if (!document.getElementById('spinStyle')) {
         const s = document.createElement('style');
         s.id = 'spinStyle';
@@ -335,7 +335,7 @@ async function scanFromImage(event) {
     lucide.createIcons();
 
     try {
-        // Pausar cÃ¡mara en vivo mientras procesa la imagen
+        // Pausar cámara en vivo mientras procesa la imagen
         if (html5QrCode && html5QrCode.isScanning) {
             await html5QrCode.stop();
         }
@@ -349,7 +349,7 @@ async function scanFromImage(event) {
         const result = await html5QrCode.scanFile(file, true);
         const cleaned = cleanBarcode(result);
 
-        // Ã‰xito â€” insertar directamente
+        // Éxito — insertar directamente
         closeScanner();
         setTimeout(() => {
             if (currentScannerTarget && currentScannerTarget.startsWith('sale-scanner-')) {
@@ -387,7 +387,7 @@ async function scanFromImage(event) {
     } catch(err) {
         console.error('Error scanning image:', err);
 
-        // No se detectÃ³ cÃ³digo â€” mostrar opciones
+        // No se detectó código — mostrar opciones
         readerEl.innerHTML = `
             <div style="
                 display: flex;
@@ -417,7 +417,7 @@ async function scanFromImage(event) {
                     color: var(--deep-blue);
                     margin: 0;
                     text-align: center;
-                ">No se detectÃ³ ningÃºn cÃ³digo</p>
+                ">No se detectó ningún código</p>
                 <p style="
                     font-size: 0.8rem;
                     color: var(--text-gray);
@@ -425,8 +425,8 @@ async function scanFromImage(event) {
                     text-align: center;
                     line-height: 1.5;
                 ">
-                    Intenta con mejor iluminaciÃ³n,<br>
-                    mÃ¡s cerca o activa el contraste.
+                    Intenta con mejor iluminación,<br>
+                    más cerca o activa el contraste.
                 </p>
                 <div style="display:flex; gap:0.75rem; width:100%;">
                     <button
@@ -439,7 +439,7 @@ async function scanFromImage(event) {
                         onclick="reiniciarCamara()"
                         class="btn btn-primary"
                         style="flex:1; justify-content:center;">
-                        <i data-lucide="camera"></i> Usar cÃ¡mara
+                        <i data-lucide="camera"></i> Usar cámara
                     </button>
                 </div>
             </div>`;

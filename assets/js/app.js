@@ -751,6 +751,44 @@ async function updatePersonalData() {
     } catch (err) { alert('Error: ' + err.message); }
 }
 
+// ── Auth State Subscription ────────────────────────────────────
+supabaseClient.auth.onAuthStateChange((event, session) => {
+    setTimeout(() => {
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            if (session) {
+                currentUser = session.user;
+
+                const bizName = currentUser.user_metadata?.business_name || 'Mi Negocio';
+                const fullName = currentUser.user_metadata?.full_name || '';
+                const sidebarBiz = document.getElementById('displayBusinessName');
+                const welcomeEl = document.getElementById('dashboardWelcome');
+
+                if (sidebarBiz) sidebarBiz.innerText = bizName;
+                if (welcomeEl) welcomeEl.innerText = fullName ? `¡Bienvenido, ${fullName}!` : 'Resumen Ejecutivo';
+
+                document.getElementById('loginView').style.display = 'none';
+                document.getElementById('appView').style.display = 'block';
+                loadState();
+            }
+        } else if (event === 'SIGNED_OUT') {
+            currentUser = null;
+            document.getElementById('loginView').style.display = 'flex';
+            document.getElementById('appView').style.display = 'none';
+        }
+    }, 0);
+});
+
+window.addEventListener('online', async () => {
+    isOnline = true;
+    showSyncStatus('online');
+    if (pendingSync) await syncToSupabase();
+});
+
+window.addEventListener('offline', () => {
+    isOnline = false;
+    showSyncStatus('offline');
+});
+
 // ── Initialize ─────────────────────────────────────────────────
 window.onload = function () {
     initCharts();

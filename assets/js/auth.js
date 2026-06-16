@@ -1,4 +1,4 @@
-// ── SEGURIDAD: Validar fortaleza de contraseña ───────────────────
+// -- SEGURIDAD: Validar fortaleza de contraseña -------------------
 function validatePassword(password) {
     const errors = [];
     if (password.length < 8) errors.push('Mínimo 8 caracteres');
@@ -8,7 +8,7 @@ function validatePassword(password) {
     return errors.length ? errors.join(', ') : null;
 }
 
-// ── SEGURIDAD: Rate limiting para login ──────────────────────────
+// -- SEGURIDAD: Rate limiting para login --------------------------
 const LOGIN_ATTEMPTS = { count: 0, lastAttempt: 0, maxPerMinute: 5 };
 function checkLoginRateLimit() {
     const now = Date.now();
@@ -36,13 +36,13 @@ document.getElementById('toggleAuth').onclick = (e) => {
     
     if (isRegisterMode) {
         title.innerText = 'Crea tu Cuenta';
-        desc.innerText = 'RegÃ­strate para empezar a gestionar tu inventario.';
+        desc.innerText = 'Regístrate para empezar a gestionar tu inventario.';
         registerFields.style.display = 'block';
         document.getElementById('auth_business').required = true;
         document.getElementById('auth_full_name').required = true;
         btn.innerHTML = '<i data-lucide="user-plus"></i> Registrar Negocio';
-        toggleText.innerText = 'Â¿Ya tienes cuenta?';
-        toggleLink.innerText = 'Iniciar SesiÃ³n';
+        toggleText.innerText = '¿Ya tienes cuenta?';
+        toggleLink.innerText = 'Iniciar Sesión';
     } else {
         title.innerText = 'Bienvenido';
         desc.innerText = 'Ingresa tus credenciales para acceder a tu panel personal.';
@@ -50,7 +50,7 @@ document.getElementById('toggleAuth').onclick = (e) => {
         document.getElementById('auth_business').required = false;
         document.getElementById('auth_full_name').required = false;
         btn.innerHTML = '<i data-lucide="log-in"></i> Acceder al Panel';
-        toggleText.innerText = 'Â¿No tienes cuenta?';
+        toggleText.innerText = '¿No tienes cuenta?';
         toggleLink.innerText = 'Registrarse';
     }
     lucide.createIcons();
@@ -67,11 +67,11 @@ document.getElementById('loginForm').onsubmit = async (e) => {
     const btn = document.getElementById('authBtn');
 
     try {
-        // ── SEGURIDAD: Rate limiting ─────────────────────────────
+        // -- SEGURIDAD: Rate limiting -----------------------------
         const rateMsg = checkLoginRateLimit();
         if (rateMsg) { throw new Error(rateMsg); }
 
-        // ── SEGURIDAD: Validar contraseña en registro ────────────
+        // -- SEGURIDAD: Validar contraseña en registro ------------
         if (isRegisterMode) {
             const pwError = validatePassword(password);
             if (pwError) { throw new Error('Contraseña débil: ' + pwError); }
@@ -96,10 +96,10 @@ document.getElementById('loginForm').onsubmit = async (e) => {
             if (error) throw error;
             
             if (data.user && data.session) {
-                // Logueado automÃ¡ticamente tras registro (si el email no requiere confirmaciÃ³n)
+                // Logueado automáticamente tras registro (si el email no requiere confirmación)
                 console.log('Registered and logged in');
             } else {
-                alert('Â¡Registro exitoso! Por favor verifica tu correo para activar tu cuenta (o inicia sesiÃ³n si la verificaciÃ³n estÃ¡ desactivada).');
+                alert('¡Registro exitoso! Por favor verifica tu correo para activar tu cuenta (o inicia sesión si la verificación está desactivada).');
                 // Forzar cambio a modo login
                 document.getElementById('toggleAuth').click();
                 btn.disabled = false;
@@ -115,7 +115,7 @@ document.getElementById('loginForm').onsubmit = async (e) => {
         }
     } catch (err) {
         console.error('Auth error:', err);
-        errorEl.innerText = 'Error: ' + (err.message || 'Credenciales invÃ¡lidas.');
+        errorEl.innerText = 'Error: ' + (err.message || 'Credenciales inválidas.');
         errorEl.style.display = 'block';
         btn.disabled = false;
         btn.innerHTML = isRegisterMode ? 
@@ -130,39 +130,5 @@ async function logout() {
     location.reload();
 }
 
-// Suscribirse a cambios de autenticaciÃ³n
-supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        if (session) {
-            currentUser = session.user;
-            
-            // Aplicar personalizaciÃ³n de nombre de negocio
-            const bizName = currentUser.user_metadata?.business_name || 'Mi Negocio';
-            const fullName = currentUser.user_metadata?.full_name || '';
-            const sidebarBiz = document.getElementById('displayBusinessName');
-            const welcomeEl = document.getElementById('dashboardWelcome');
-            
-            if (sidebarBiz) sidebarBiz.innerText = bizName;
-            if (welcomeEl) welcomeEl.innerText = fullName ? `Â¡Bienvenido, ${fullName}!` : 'Resumen Ejecutivo';
-
-            document.getElementById('loginView').style.display = 'none';
-            document.getElementById('appView').style.display = 'block';
-            loadState(); 
-        }
-    } else if (event === 'SIGNED_OUT') {
-        currentUser = null;
-        document.getElementById('loginView').style.display = 'flex';
-        document.getElementById('appView').style.display = 'none';
-    }
-});
-
-window.addEventListener('online', async () => {
-    isOnline = true;
-    showSyncStatus('online');
-    if (pendingSync) await syncToSupabase();
-});
-
-window.addEventListener('offline', () => {
-    isOnline = false;
-    showSyncStatus('offline');
-});
+// Auth listeners moved to app.js (after loadState is defined)
+// to prevent ReferenceError from INITIAL_SESSION firing before loadState exists.
