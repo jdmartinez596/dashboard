@@ -719,6 +719,19 @@ tr:last-child td {
         gap: 5px;
         grid-template-rows: 16px repeat(4, 1fr);
     }
+
+    #accounting header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    #accounting header > div {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    #accounting > div[style*="minmax(420px"] {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 @media (max-width: 1024px) and (min-width: 769px) {
@@ -744,10 +757,7 @@ tr:last-child td {
     .kpi-grid {
         grid-template-columns: 1fr;
     }
-    #accounting > div.kpi-grid[style*="minmax(220px"] {
-        grid-template-columns: 1fr !important;
-    }
-    #accounting > div[style*="minmax(200px"] {
+    #accounting > div.kpi-grid[style*="minmax(200px"] {
         grid-template-columns: 1fr !important;
     }
     #acc-res-final-box {
@@ -1024,7 +1034,7 @@ tr:last-child td {
     #customAccDates input {
         width: 100% !important;
     }
-    #accounting > div[style*="minmax(450px"] {
+    #accounting > div[style*="minmax(420px"] {
         grid-template-columns: 1fr !important;
         gap: 1.25rem !important;
     }
@@ -1035,11 +1045,22 @@ tr:last-child td {
         flex-wrap: wrap;
         gap: 0.75rem;
     }
-    #accounting > div.kpi-grid[style*="minmax(220px"] {
+    #accounting > div.kpi-grid[style*="minmax(200px"] {
         grid-template-columns: 1fr 1fr !important;
     }
-    #accounting .section-card[style*="max-width:800px"] {
+    #accounting .section-card[style*="max-width:900px"] {
         padding: 1.5rem 1rem !important;
+    }
+    .report-row {
+        gap: 0.5rem;
+    }
+    .report-row span:first-child {
+        font-size: 0.82rem;
+        word-break: break-word;
+        hyphens: auto;
+    }
+    .report-row span:last-child {
+        white-space: nowrap;
     }
 }
 

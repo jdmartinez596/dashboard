@@ -81,7 +81,7 @@ function addCategory() {
 function removeCategory(name) {
     const enUso = state.transactions.some(t => t.category === name);
     if (enUso) {
-        alert(`La categorÃ­a "${name}" estÃ¡ en uso por transacciones existentes y no puede eliminarse.`);
+        alert(`La categoría "${name}" está en uso por transacciones existentes y no puede eliminarse.`);
         return;
     }
     state.settings.categories = state.settings.categories.filter(c => c !== name);
@@ -155,9 +155,9 @@ async function updatePersonalData() {
         const welcomeEl = document.getElementById('dashboardWelcome');
         
         if (sidebarBiz) sidebarBiz.innerText = businessName;
-        if (welcomeEl) welcomeEl.innerText = `Â¡Bienvenido, ${fullName}!`;
+        if (welcomeEl) welcomeEl.innerText = `¡Bienvenido, ${fullName}!`;
 
-        alert('Â¡Datos actualizados con Ã©xito!');
+        alert('¡Datos actualizados con éxito!');
         lucide.createIcons();
     } catch (err) {
         alert('Error al actualizar datos: ' + err.message);

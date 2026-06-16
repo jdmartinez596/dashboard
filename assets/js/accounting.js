@@ -48,7 +48,7 @@ function renderAccounting() {
 
     const costOfInventoryPurchased = inventoryEntries.reduce((acc, i) => acc + (parseFloat(i.cost) || 0), 0);
     const costOfMerchSold = sales.reduce((acc, s) => acc + getSaleCost(s), 0);
-    const opExpenses = transactions.filter(t => t.type === 'expense' && t.category !== 'DevoluciÃ³n').reduce((acc, t) => acc + (parseFloat(t.amount) || 0), 0);
+    const opExpenses = transactions.filter(t => t.type === 'expense' && t.category !== 'Devolución').reduce((acc, t) => acc + (parseFloat(t.amount) || 0), 0);
     const totalReturnsPaid = returns.reduce((acc, r) => acc + (parseFloat(r.salePrice) || 0), 0);
 
     // Cost of aoods Sold calculations
@@ -121,7 +121,7 @@ function renderAccounting() {
     if (document.getElementById('acc-final-total-expenses')) document.getElementById('acc-final-total-expenses').innerText = `$${totalExpensesAcc.toLocaleString()}`;
 
     const expenseCats = {};
-    transactions.filter(t => t.type === 'expense' && t.category !== 'DevoluciÃ³n').forEach(t => { expenseCats[t.category] = (expenseCats[t.category] || 0) + parseFloat(t.amount); });
+    transactions.filter(t => t.type === 'expense' && t.category !== 'Devolución').forEach(t => { expenseCats[t.category] = (expenseCats[t.category] || 0) + parseFloat(t.amount); });
     let expHtml = '';
     for (let cat in expenseCats) { expHtml += `<div class="report-row" style="font-size:0.85rem; padding-left:1rem; border-bottom:none;"><span>${escapeHtml(cat)}</span><span>$${expenseCats[cat].toLocaleString()}</span></div>`; }
     if (document.getElementById('acc-expense-categories')) document.getElementById('acc-expense-categories').innerHTML = expHtml;
@@ -195,7 +195,7 @@ function renderAccounting() {
             totalDays += Math.floor((end - start) / (1000 * 60 * 60 * 24));
         }
     });
-    if (document.getElementById('acc-met-rotation')) document.getElementById('acc-met-rotation').innerText = soldInPeriod.length > 0 ? `${Math.round(totalDays / soldInPeriod.length)} dÃ­as` : '0 dÃ­as';
+    if (document.getElementById('acc-met-rotation')) document.getElementById('acc-met-rotation').innerText = soldInPeriod.length > 0 ? `${Math.round(totalDays / soldInPeriod.length)} días` : '0 días';
 
     const stagnant = state.inventory.filter(i => {
         if (i.status !== 'Disponible') return false;
@@ -237,7 +237,7 @@ function renderAccountingTrace() {
         const costNum = parseFloat(i.cost) || 0;
         const priceNum = sale ? (parseFloat(sale.price) || 0) : 0;
         const utility = sale ? (priceNum - costNum) : 0;
-        const statusColor = i.status === 'Disponible' ? '#047481' : i.status === 'Vendido' ? 'var(--deep-blue)' : i.status === 'Devuelto' ? 'var(--vibrant-red)' : i.status === 'aarantía' ? '#B7791F' : '#718096';
+        const statusColor = i.status === 'Disponible' ? '#047481' : i.status === 'Vendido' ? 'var(--deep-blue)' : i.status === 'Devuelto' ? 'var(--vibrant-red)' : i.status === 'Garantía' ? '#B7791F' : '#718096';
         const eSerial = escapeHtml(i.serial);
         const eModel = escapeHtml(i.model);
         const eStatus = escapeHtml(i.status);

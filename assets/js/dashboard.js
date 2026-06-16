@@ -6,6 +6,15 @@ function updateDashboard() {
     const prevM = curM === 0 ? 11 : curM - 1;
     const prevY = curM === 0 ? curY - 1 : curY;
 
+    const getSaleTotal = (s) => {
+        if (s.total) return parseFloat(s.total) || 0;
+        if (s.price) return parseFloat(s.price) || 0;
+        if (s.devices && Array.isArray(s.devices)) {
+            return s.devices.reduce((a, d) => a + (parseFloat(d.price) || 0), 0);
+        }
+        return 0;
+    };
+
     const filterCurM = (dStr) => { const d = parseDateLocal(dStr); return d && d.getMonth() === curM && d.getFullYear() === curY; };
     const filterPrevM = (dStr) => { const d = parseDateLocal(dStr); return d && d.getMonth() === prevM && d.getFullYear() === prevY; };
 
@@ -15,8 +24,8 @@ function updateDashboard() {
     const otherIncomeCurM = (state.transactions || []).filter(t => t.type === 'income' && t.category !== 'Venta' && filterCurM(t.date)).reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
     const otherIncomePrevM = (state.transactions || []).filter(t => t.type === 'income' && t.category !== 'Venta' && filterPrevM(t.date)).reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
 
-    const incomeCurM = salesCurM.reduce((a, s) => a + (parseFloat(s.price) || 0), 0) + otherIncomeCurM;
-    const incomePrevM = salesPrevM.reduce((a, s) => a + (parseFloat(s.price) || 0), 0) + otherIncomePrevM;
+    const incomeCurM = salesCurM.reduce((a, s) => a + getSaleTotal(s), 0) + otherIncomeCurM;
+    const incomePrevM = salesPrevM.reduce((a, s) => a + getSaleTotal(s), 0) + otherIncomePrevM;
 
     const costCurM = salesCurM.reduce((a, s) => a + getSaleCost(s), 0);
     const expCurM = (state.transactions || []).filter(t => t.type === 'expense' && t.category !== 'Devolución' && filterCurM(t.date)).reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
@@ -48,10 +57,10 @@ function updateDashboard() {
     if (kpiSold) kpiSold.innerHTML = `${salesCurM.length} ${getVarBadge(salesCurM.length, salesPrevM.length)}`;
 
     const kpiStock = document.getElementById('kpi-stock');
-    if (kpiStock) kpiStock.innerText = state.inventory.filter(i => i.status === 'Disponible').length;
+    if (kpiStock) kpiStock.innerText = (state.inventory || []).filter(i => i.status === 'Disponible').length;
 
     // Rotación promedio
-    const soldItems = state.inventory.filter(i => i.status === 'Vendido');
+    const soldItems = (state.inventory || []).filter(i => i.status === 'Vendido');
     let rotationText = '0 días';
     if (soldItems.length > 0) {
         let totalDays = 0;
@@ -89,7 +98,7 @@ function renderStockBars() {
 
     const uniqueModels = Array.from(new Set([
         ...Object.keys(state.settings.thresholds),
-        ...state.inventory.map(i => i.model)
+        ...(state.inventory || []).map(i => i.model)
     ])).filter(Boolean);
 
     uniqueModels.forEach(model => {
@@ -139,7 +148,7 @@ function renderStockBars() {
 
     const uniqueModels2 = Array.from(new Set([
         ...Object.keys(state.settings.thresholds),
-        ...state.inventory.map(i => i.model)
+        ...(state.inventory || []).map(i => i.model)
     ])).filter(Boolean);
 
     const bajosCount = uniqueModels2.filter(m => {

@@ -192,7 +192,8 @@ function onBarcodeDetected(decodedText) {
 }
 
 function closeScanner() {
-    document.getElementById('scannerModal').style.display = 'none';
+    const modal = document.getElementById('scannerModal');
+    if (modal) modal.style.display = 'none';
     scannerActive = false;
 
     // Detener cámara en segundo plano sin bloquear UI
@@ -365,11 +366,6 @@ async function scanFromImage(event) {
                     }
                 }
             } else {
-                    if (hidden) hidden.value = cleaned;
-                    if (input) input.value = cleaned;
-                    alert(`Serial "${cleaned}" no encontrado en inventario disponible.`);
-                }
-            } else {
                 const target = document.getElementById(currentScannerTarget);
                 if (target) {
                     target.value = cleaned;
@@ -465,7 +461,10 @@ function toggleLaserBar() {
     const visible = bar.style.display === 'flex';
     bar.style.display = visible ? 'none' : 'flex';
     if (!visible) {
-        setTimeout(() => document.getElementById('laserInput').focus(), 100);
+        setTimeout(() => {
+            const li = document.getElementById('laserInput');
+            if (li) li.focus();
+        }, 100);
     }
 }
 

@@ -85,7 +85,8 @@ function updateSaleTotal() {
     if (display) display.innerText = `$${Math.round(total).toLocaleString()}`;
 }
 
-document.getElementById('saleForm').onsubmit = function (e) {
+const saleForm = document.getElementById('saleForm');
+if (saleForm) saleForm.onsubmit = function (e) {
     e.preventDefault();
     const client = document.getElementById('m_sale_client').value.trim();
     const city = document.getElementById('m_sale_city').value.trim();
@@ -310,7 +311,8 @@ function deleteSale(serial) {
     }
 }
 
-document.getElementById('returnForm').onsubmit = async (e) => {
+const returnForm = document.getElementById('returnForm');
+if (returnForm) returnForm.onsubmit = async (e) => {
     e.preventDefault();
     if (currentReturnSaleIndex === -1) return;
 

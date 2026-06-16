@@ -13,12 +13,12 @@ const LOGIN_ATTEMPTS = { count: 0, lastAttempt: 0, maxPerMinute: 5 };
 function checkLoginRateLimit() {
     const now = Date.now();
     if (now - LOGIN_ATTEMPTS.lastAttempt > 60000) LOGIN_ATTEMPTS.count = 0;
-    LOGIN_ATTEMPTS.lastAttempt = now;
     LOGIN_ATTEMPTS.count++;
     if (LOGIN_ATTEMPTS.count > LOGIN_ATTEMPTS.maxPerMinute) {
-        const wait = Math.ceil((60000 - (now - LOGIN_ATTEMPTS.lastAttempt + 60000)) / 1000);
-        return `Demasiados intentos. Espera ${wait} segundos.`;
+        const wait = Math.ceil((LOGIN_ATTEMPTS.lastAttempt + 60000 - now) / 1000);
+        if (wait > 0) return `Demasiados intentos. Espera ${wait} segundos.`;
     }
+    LOGIN_ATTEMPTS.lastAttempt = now;
     return null;
 }
 

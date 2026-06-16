@@ -16,8 +16,19 @@ function getLocalDateString(date = new Date()) {
 
 function parseDateLocal(dateStr) {
     if (!dateStr) return null;
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d);
+    // Soportar formato YYYY-MM-DD y DD/MM/YYYY
+    if (dateStr.includes('-')) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        if (!y || !m || !d) return null;
+        return new Date(y, m - 1, d);
+    }
+    if (dateStr.includes('/')) {
+        const [d, m, y] = dateStr.split('/').map(Number);
+        if (!y || !m || !d) return null;
+        return new Date(y, m - 1, d);
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
 }
 
 function getDateRangeFilter(period, customFrom, customTo) {
@@ -49,13 +60,22 @@ function getDateRangeFilter(period, customFrom, customTo) {
 
 // Helper: obtener costo real de una venta desde el inventario
 function getSaleCost(sale) {
+    if (!sale || !state || !state.inventory) return 0;
+    // Si la venta tiene múltiples dispositivos (devices[])
+    if (sale.devices && Array.isArray(sale.devices)) {
+        return sale.devices.reduce((total, device) => {
+            const item = state.inventory.find(i => i.serial === device.serial);
+            return total + (item ? (parseFloat(item.cost) || 0) : 0);
+        }, 0);
+    }
+    // Venta con un solo serial
     const item = state.inventory.find(i => i.serial === sale.serial);
     return item ? (parseFloat(item.cost) || 0) : 0;
 }
 
 function cleanBarcode(raw) {
     return raw
-        .replace(/^(SN|S\/N|SERIAL|IMEI|IME|NO|NUM|NÂ°|#)\s*[:\.\-]?\s*/i, '')
+        .replace(/^(SN|S\/N|SERIAL|IMEI|IME|NO|NUM|N°|#)\s*[:\.\-]?\s*/i, '')
         .replace(/\s+/g, '')
         .trim();
 }

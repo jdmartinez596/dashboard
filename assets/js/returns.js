@@ -17,7 +17,7 @@ function renderReturns() {
             const impact = r.salePrice || 0;
             const actionColor =
                 r.action === 'Reingreso' ? '#047481' :
-                r.action === 'aarantía' ? '#B7791F' :
+                r.action === 'Garantía' ? '#B7791F' :
                 'var(--vibrant-red)';
             const eId = escapeHtml(r.id);
             const eSerial = escapeHtml(r.serial);
@@ -71,7 +71,7 @@ function renderReturns() {
     const total = returns.length;
     const impact = returns.reduce((a, r) => a + (r.salePrice || 0), 0);
     const reingresos = returns.filter(r => r.action === 'Reingreso').length;
-    const warranty = returns.filter(r => r.action === 'aarantía').length;
+    const warranty = returns.filter(r => r.action === 'Garantía').length;
 
     const kpiTotal = document.getElementById('ret-kpi-total');
     const kpiImpact = document.getElementById('ret-kpi-impact');

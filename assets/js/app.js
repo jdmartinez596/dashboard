@@ -22,29 +22,60 @@ let currentUser = null;
 let isRegisterMode = false;
 
 // ── State Management ──────────────────────────────────────────
-function saveState() {
+async function saveState() {
     if (!currentUser) return;
     const key = LOCAL_STORAGE_KEY + '_' + currentUser.id;
+
+    // Guardar en localStorage inmediatamente
     localStorage.setItem(key, JSON.stringify(state));
     localStorage.setItem(key + '_time', Date.now().toString());
+
+    // Actualizar UI con datos actuales
     refreshUI();
-    if (isOnline) syncToSupabase();
-    else pendingSync = true;
+
+    // Sincronizar con Supabase
+    if (isOnline) {
+        try {
+            showSyncStatus('syncing');
+            const { error } = await supabaseClient
+                .from('dashboard_state')
+                .upsert({
+                    id: 'main_' + currentUser.id,
+                    user_id: currentUser.id,
+                    data: state,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+
+            if (error) throw error;
+            showSyncStatus('synced');
+        } catch (err) {
+            console.warn('Supabase save failed:', err);
+            showSyncStatus('error');
+        }
+    } else {
+        pendingSync = true;
+    }
+}
+
+function getDefaultSettings() {
+    return {
+        categories: ['Marketing', 'Logística', 'Soporte', 'Gasto Operativo', 'Inversión'],
+        sources: ['WhatsApp', 'Instagram', 'Facebook', 'Referido', 'Tienda Física', 'Página Web', 'Mercado Libre', 'Otro'],
+        thresholds: { 'Sono Qr': 5, 'Neo': 5, 'Plus': 5, 'Smart': 3, 'Smart Pro': 2 }
+    };
 }
 
 async function loadState() {
     if (!currentUser) return;
     const localKey = LOCAL_STORAGE_KEY + '_' + currentUser.id;
 
+    // Cargar localStorage como fallback inmediato
     const saved = localStorage.getItem(localKey);
     if (saved) {
         try { state = JSON.parse(saved); } catch (e) { }
     }
-    state.inventory = state.inventory || [];
-    state.sales = state.sales || [];
-    state.transactions = state.transactions || [];
-    state.returns = state.returns || [];
 
+    // Si hay conexión, esperar datos de Supabase
     if (isOnline) {
         try {
             showSyncStatus('syncing');
@@ -54,35 +85,45 @@ async function loadState() {
                 .eq('user_id', currentUser.id)
                 .single();
 
-            if (error && error.code !== 'PGRST116') throw error;
+            if (!error && data && data.data &&
+                Object.keys(data.data).length > 0) {
 
-            if (data) {
                 const cloudTime = new Date(data.updated_at).getTime();
-                const localTime = localStorage.getItem(localKey + '_time');
-                const localTimeMs = localTime ? parseInt(localTime) : 0;
+                const localTime = parseInt(
+                    localStorage.getItem(localKey + '_time') || '0'
+                );
 
-                if (cloudTime > localTimeMs) {
+                if (cloudTime >= localTime) {
                     state = data.data;
-                    state.inventory = state.inventory || [];
-                    state.sales = state.sales || [];
-                    state.transactions = state.transactions || [];
-                    state.returns = state.returns || [];
                     localStorage.setItem(localKey, JSON.stringify(state));
                     localStorage.setItem(localKey + '_time', cloudTime.toString());
                 }
-            } else {
-                await syncToSupabase();
             }
         } catch (err) {
-            console.warn('Cloud load error:', err);
+            console.warn('Supabase load failed, usando localStorage:', err);
         }
     }
 
-    const now = new Date();
-    const dateEl = document.getElementById('currentDate');
-    if (dateEl) dateEl.innerText = now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    // Inicializar arrays si no existen (migración segura)
+    if (!state.inventory)    state.inventory    = [];
+    if (!state.sales)        state.sales        = [];
+    if (!state.transactions) state.transactions = [];
+    if (!state.returns)      state.returns      = [];
+    if (!state.settings)     state.settings     = getDefaultSettings();
 
+    // Actualizar fecha en el header
+    const now = new Date();
+    const currentDateEl = document.getElementById('currentDate');
+    if (currentDateEl) {
+        currentDateEl.innerText = now.toLocaleDateString('es-ES', {
+            month: 'long', year: 'numeric'
+        });
+    }
+
+    // Solo ahora, con datos ya en state, inicializar UI
+    initCharts();
     refreshUI();
+    showSyncStatus('synced');
     subscribeToRealtime();
 }
 
@@ -113,12 +154,13 @@ async function syncToSupabase() {
 }
 
 function refreshUI() {
+    if (typeof updateDashboard === 'function') updateDashboard();
     if (typeof renderInventory === 'function') renderInventory();
     if (typeof renderSales === 'function') renderSales();
     if (typeof renderFinance === 'function') renderFinance();
     if (typeof renderAccounting === 'function') renderAccounting();
     if (typeof renderReturns === 'function') renderReturns();
-    if (typeof updateDashboard === 'function') updateDashboard();
+    if (typeof renderSettings === 'function') renderSettings();
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -178,7 +220,9 @@ function showView(viewId) {
 
 // ── Modals ────────────────────────────────────────────────────
 function openModal(id) {
-    document.getElementById(id).style.display = 'flex';
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = 'flex';
     if (id === 'saleModal') {
         populateSources();
         if (editingSaleIndex === -1) {
@@ -186,37 +230,49 @@ function openModal(id) {
             if (deviceList) deviceList.innerHTML = '';
             saleDeviceCount = 0;
             addSaleDevice();
-            document.getElementById('m_sale_date').value = getLocalDateString();
+            const saleDateEl = document.getElementById('m_sale_date');
+            if (saleDateEl) saleDateEl.value = getLocalDateString();
         }
     }
     if (id === 'inventoryModal') {
-        document.getElementById('m_inv_date').value = getLocalDateString();
-        document.getElementById('m_inv_model').innerHTML = getModelOptions(
+        const invDateEl = document.getElementById('m_inv_date');
+        if (invDateEl) invDateEl.value = getLocalDateString();
+        const invModelEl = document.getElementById('m_inv_model');
+        if (invModelEl) invModelEl.innerHTML = getModelOptions(
             editingInventoryIndex !== -1 ? state.inventory[editingInventoryIndex].model : ''
         );
         if (editingInventoryIndex !== -1) {
             const inv = state.inventory[editingInventoryIndex];
-            document.getElementById('m_inv_serial').readOnly = true;
-            document.getElementById('m_inv_date').value = inv.entryDate || getLocalDateString();
+            const invSerialEl = document.getElementById('m_inv_serial');
+            if (invSerialEl) {
+                invSerialEl.readOnly = true;
+                invSerialEl.value = inv.serial || '';
+            }
+            if (invDateEl) invDateEl.value = inv.entryDate || getLocalDateString();
         } else {
-            document.getElementById('m_inv_serial').readOnly = false;
+            const invSerialEl = document.getElementById('m_inv_serial');
+            if (invSerialEl) invSerialEl.readOnly = false;
         }
     }
     if (id === 'transactionModal') {
         populateFinanceCategories();
         if (editingFinanceIndex === -1) {
-            document.getElementById('m_trans_date').value = getLocalDateString();
+            const txDateEl = document.getElementById('m_trans_date');
+            if (txDateEl) txDateEl.value = getLocalDateString();
         }
     }
     lucide.createIcons();
 }
 
 function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = 'none';
 
     if (id === 'saleModal') {
         editingSaleIndex = -1;
-        document.getElementById('saleForm').reset();
+        const saleForm = document.getElementById('saleForm');
+        if (saleForm) saleForm.reset();
         saleDeviceCount = 0;
         const deviceList = document.getElementById('saleDeviceList');
         if (deviceList) deviceList.innerHTML = '';
@@ -226,8 +282,14 @@ function closeModal(id) {
     if (id === 'inventoryModal') editingInventoryIndex = -1;
     if (id === 'transactionModal') editingFinanceIndex = -1;
 
-    if (id === 'inventoryModal') document.getElementById('inventoryForm').reset();
-    if (id === 'transactionModal') document.getElementById('transactionForm').reset();
+    if (id === 'inventoryModal') {
+        const invForm = document.getElementById('inventoryForm');
+        if (invForm) invForm.reset();
+    }
+    if (id === 'transactionModal') {
+        const txForm = document.getElementById('transactionForm');
+        if (txForm) txForm.reset();
+    }
 }
 
 function openReturnModal(serial) {
@@ -255,14 +317,18 @@ function openReturnModal(serial) {
         📊 <b>Utilidad original:</b> $${((s.price || 0) - cost).toLocaleString()}
     `;
 
-    document.getElementById('m_ret_date').value = getLocalDateString();
-    document.getElementById('returnModalOverlay').style.display = 'flex';
+    const retDateEl = document.getElementById('m_ret_date');
+    if (retDateEl) retDateEl.value = getLocalDateString();
+    const retOverlay = document.getElementById('returnModalOverlay');
+    if (retOverlay) retOverlay.style.display = 'flex';
     lucide.createIcons();
 }
 
 function closeReturnModal() {
-    document.getElementById('returnModalOverlay').style.display = 'none';
-    document.getElementById('returnForm').reset();
+    const retOverlay = document.getElementById('returnModalOverlay');
+    if (retOverlay) retOverlay.style.display = 'none';
+    const retForm = document.getElementById('returnForm');
+    if (retForm) retForm.reset();
     currentReturnSaleIndex = -1;
 }
 
@@ -353,6 +419,11 @@ function populateSaleSerials() {
 let salesChart, categoryChartInstance, sourceChart;
 
 function initCharts() {
+    // Destruir instancias previas para evitar fugas de memoria
+    if (salesChart) { salesChart.destroy(); salesChart = null; }
+    if (categoryChartInstance) { categoryChartInstance.destroy(); categoryChartInstance = null; }
+    if (sourceChart) { sourceChart.destroy(); sourceChart = null; }
+
     const ctxSales = document.getElementById('salesTrendChart').getContext('2d');
     salesChart = new Chart(ctxSales, {
         type: 'line',
@@ -463,7 +534,10 @@ function toggleLaserBar() {
     if (!bar) return;
     const visible = bar.style.display === 'flex';
     bar.style.display = visible ? 'none' : 'flex';
-    if (!visible) document.getElementById('laserInput').focus();
+    if (!visible) {
+        const li = document.getElementById('laserInput');
+        if (li) li.focus();
+    }
 }
 
 function hideLaserBar() {
@@ -634,122 +708,10 @@ function exportAccountingXLSX() {
     XLSX.writeFile(wb, `Contabilidad_PartnersBold_${getLocalDateString()}.xlsx`);
 }
 
-// ── Settings ───────────────────────────────────────────────────
-function renderSettings() {
-    if (currentUser) {
-        document.getElementById('set_full_name').value = currentUser.user_metadata?.full_name || '';
-        document.getElementById('set_business_name').value = currentUser.user_metadata?.business_name || '';
-    }
-
-    const list = document.getElementById('categoryList');
-    list.innerHTML = '';
-    state.settings.categories.forEach(c => {
-        const ec = escapeHtml(c);
-        list.innerHTML += `<span class="badge" style="background:var(--light-gray);color:var(--deep-blue);border:1px solid var(--border);display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;">${ec} <i data-lucide="x" size="14" style="cursor:pointer" onclick="removeCategory('${ec}')"></i></span>`;
-    });
-
-    const sourceList = document.getElementById('sourceList');
-    if (sourceList) {
-        sourceList.innerHTML = '';
-        (state.settings.sources || []).forEach(s => {
-            const es = escapeHtml(s);
-            sourceList.innerHTML += `<span class="badge" style="background:var(--light-gray);color:var(--deep-blue);border:1px solid var(--border);display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;border-radius:100px;font-size:0.85rem;font-weight:600;">${es} <i data-lucide="x" style="width:14px;height:14px;cursor:pointer;" onclick="removeSource('${es}')"></i></span>`;
-        });
-    }
-
-    const modelList = document.getElementById('modelList');
-    modelList.innerHTML = '';
-    Object.keys(state.settings.thresholds).forEach(m => {
-        const em = escapeHtml(m);
-        modelList.innerHTML += `<span class="badge" style="background:var(--light-gray);color:var(--deep-blue);border:1px solid var(--border);display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;">${em} <i data-lucide="x" size="14" style="cursor:pointer" onclick="removeModel('${em}')"></i></span>`;
-    });
-
-    const thresholds = document.getElementById('thresholdSettings');
-    thresholds.innerHTML = '';
-    Object.keys(state.settings.thresholds).forEach(m => {
-        const em = escapeHtml(m);
-        thresholds.innerHTML += `<div class="form-group"><label>${em}</label><input type="number" value="${state.settings.thresholds[m]}" onchange="updateThreshold('${em}', this.value)"></div>`;
-    });
-    lucide.createIcons();
-}
-
-function addModel() {
-    const name = document.getElementById('newModelName').value.trim();
-    if (!name) return;
-    if (state.settings.thresholds[name] !== undefined) { alert('Este modelo ya existe.'); return; }
-    state.settings.thresholds[name] = 5;
-    saveState();
-    renderSettings();
-    document.getElementById('newModelName').value = '';
-}
-
-function removeModel(name) {
-    if (state.inventory.some(i => i.model === name)) { alert(`El modelo "${name}" tiene equipos registrados.`); return; }
-    delete state.settings.thresholds[name];
-    saveState();
-    renderSettings();
-}
-
-function addCategory() {
-    const name = document.getElementById('newCategoryName').value.trim();
-    if (name && !state.settings.categories.includes(name)) { state.settings.categories.push(name); saveState(); renderSettings(); document.getElementById('newCategoryName').value = ''; }
-}
-
-function removeCategory(name) {
-    if (state.transactions.some(t => t.category === name)) { alert(`La categoría "${name}" está en uso.`); return; }
-    state.settings.categories = state.settings.categories.filter(c => c !== name);
-    saveState();
-    renderSettings();
-}
-
-function updateThreshold(model, val) { state.settings.thresholds[model] = parseInt(val); saveState(); }
-
-function addSource() {
-    const name = document.getElementById('newSourceName').value.trim();
-    if (!name) return;
-    if (!state.settings.sources) state.settings.sources = [];
-    if (state.settings.sources.includes(name)) { alert('Este canal ya existe.'); return; }
-    state.settings.sources.push(name);
-    saveState();
-    renderSettings();
-    document.getElementById('newSourceName').value = '';
-}
-
-function removeSource(name) {
-    if (state.sales.some(s => s.source === name)) { alert(`El canal "${name}" tiene ventas registradas.`); return; }
-    state.settings.sources = (state.settings.sources || []).filter(s => s !== name);
-    saveState();
-    renderSettings();
-}
-
-function populateSources() {
-    const sources = state.settings.sources || ['WhatsApp', 'Instagram', 'Facebook', 'Referido', 'Tienda Física', 'Página Web', 'Mercado Libre', 'Otro'];
-    const select = document.getElementById('m_sale_source');
-    const currentVal = select ? select.value : '';
-    if (select) {
-        select.innerHTML = sources.map(s => {
-            const es = escapeHtml(s);
-            return `<option value="${es}" ${es === currentVal ? 'selected' : ''}>${es}</option>`;
-        }).join('');
-    }
-}
-
-async function updatePersonalData() {
-    const fullName = document.getElementById('set_full_name').value.trim();
-    const businessName = document.getElementById('set_business_name').value.trim();
-    if (!fullName || !businessName) { alert('Completa todos los campos.'); return; }
-    try {
-        const { data, error } = await supabaseClient.auth.updateUser({ data: { full_name: fullName, business_name: businessName } });
-        if (error) throw error;
-        currentUser = data.user;
-        const sidebarBiz = document.getElementById('displayBusinessName');
-        const welcomeEl = document.getElementById('dashboardWelcome');
-        if (sidebarBiz) sidebarBiz.innerText = businessName;
-        if (welcomeEl) welcomeEl.innerText = `¡Bienvenido, ${fullName}!`;
-        alert('¡Datos actualizados!');
-        lucide.createIcons();
-    } catch (err) { alert('Error: ' + err.message); }
-}
+// ── Settings (definidas en settings.js) ─────────────────────────
+// renderSettings, addModel, removeModel, addCategory, removeCategory,
+// updateThreshold, addSource, removeSource, populateSources,
+// updatePersonalData se encuentran en assets/js/settings.js
 
 // ── Auth State Subscription ────────────────────────────────────
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -790,6 +752,5 @@ window.addEventListener('offline', () => {
 });
 
 // ── Initialize ─────────────────────────────────────────────────
-window.onload = function () {
-    initCharts();
-};
+// initCharts() se llama desde loadState() después de cargar datos
+// para evitar que las gráficas se inicialicen con $0

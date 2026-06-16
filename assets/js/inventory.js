@@ -21,7 +21,8 @@ function onInvPeriodChange() {
     renderInventory();
 }
 
-document.getElementById('inventoryForm').onsubmit = function (e) {
+const invForm = document.getElementById('inventoryForm');
+if (invForm) invForm.onsubmit = function (e) {
     e.preventDefault();
     const serial = document.getElementById('m_inv_serial').value.trim();
     const model = document.getElementById('m_inv_model').value;
@@ -69,7 +70,7 @@ function renderInventory() {
         return matchSearch && matchModel && matchDate;
     });
 
-    // Orden cronolÃ³gico descendente
+    // Orden cronológico descendente
     filteredInv.sort((a, b) => {
         const da = parseDateLocal(a.entryDate) || 0;
         const db = parseDateLocal(b.entryDate) || 0;
@@ -82,7 +83,7 @@ function renderInventory() {
         const statusColor =
             i.status === 'Disponible' ? '#047481' :
             i.status === 'Vendido' ? 'var(--deep-blue)' :
-            i.status === 'GarantÃ­a' ? '#B7791F' :
+            i.status === 'Garantía' ? '#B7791F' :
             i.status === 'Baja' ? 'var(--vibrant-red)' :
             'var(--text-gray)';
 
@@ -93,12 +94,12 @@ function renderInventory() {
 
         if (i.status === 'Disponible') {
             const days = Math.floor((now - entryDate) / (1000 * 60 * 60 * 24));
-            daysText = `${days} dÃ­as`;
+            daysText = `${days} días`;
             if (days > 30) stagnantStyle = 'background:rgba(183,121,31,0.1); color:#B7791F; font-weight:700; border-radius:4px; padding:0.1rem 0.3rem;';
         } else if (sale) {
             const saleDate = parseDateLocal(sale.saleDate);
             const days = Math.floor((saleDate - entryDate) / (1000 * 60 * 60 * 24));
-            daysText = `${days} dÃ­as`;
+            daysText = `${days} días`;
         }
 
         const eSerial = escapeHtml(i.serial);
@@ -137,7 +138,7 @@ function renderInventory() {
     const invCountEl = document.getElementById('invResultCount');
     if (invCountEl) {
         invCountEl.innerText = invDateRange
-            ? `${filteredInv.length} equipo${filteredInv.length !== 1 ? 's' : ''} en el perÃ­odo`
+            ? `${filteredInv.length} equipo${filteredInv.length !== 1 ? 's' : ''} en el período`
             : `${filteredInv.length} equipo${filteredInv.length !== 1 ? 's' : ''} en total`;
     }
     lucide.createIcons();
@@ -148,7 +149,6 @@ function editInventory(serial) {
     if (index === -1) return;
     editingInventoryIndex = index;
     const i = state.inventory[index];
-    document.getElementById('m_inv_model').value = i.model;
     document.getElementById('m_inv_serial').value = i.serial;
     document.getElementById('m_inv_imei').value = i.imei || '';
     document.getElementById('m_inv_cost').value = i.cost;
@@ -156,7 +156,7 @@ function editInventory(serial) {
 }
 
 function deleteItem(serial) {
-    if (confirm('Â¿Eliminar este equipo? Se borrarÃ¡n tambiÃ©n sus ventas y registros financieros asociados.')) {
+    if (confirm('¿Eliminar este equipo? Se borrarán también sus ventas y registros financieros asociados.')) {
         // 1. Limpiar ventas y sus finanzas
         const sale = state.sales.find(s => s.serial === serial);
         if (sale) {
@@ -164,11 +164,11 @@ function deleteItem(serial) {
             state.transactions = state.transactions.filter(t => 
                 !(t.type === 'income' && t.description.includes(serial))
             );
-            // Eliminar devoluciÃ³n si existe
+            // Eliminar devolución si existe
             if (sale.returned) {
                 state.returns = (state.returns || []).filter(r => r.serial !== serial);
                 state.transactions = state.transactions.filter(t => 
-                    !(t.category === 'DevoluciÃ³n' && t.description.includes(serial))
+                    !(t.category === 'Devolución' && t.description.includes(serial))
                 );
             }
             state.sales = state.sales.filter(s => s.serial !== serial);
