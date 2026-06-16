@@ -37,14 +37,15 @@ async function saveState() {
     if (isOnline) {
         try {
             showSyncStatus('syncing');
+            const rowId = 'main_' + currentUser.id;
             const { error } = await supabaseClient
                 .from('dashboard_state')
                 .upsert({
-                    id: 'main_' + currentUser.id,
+                    id: rowId,
                     user_id: currentUser.id,
                     data: state,
                     updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
+                }, { onConflict: 'id' });
 
             if (error) throw error;
             showSyncStatus('synced');
@@ -135,13 +136,15 @@ async function syncToSupabase() {
 
     try {
         showSyncStatus('syncing');
+        const rowId = 'main_' + currentUser.id;
         const { error } = await supabaseClient
             .from('dashboard_state')
             .upsert({
+                id: rowId,
                 user_id: currentUser.id,
                 data: state,
                 updated_at: new Date().toISOString()
-            });
+            }, { onConflict: 'id' });
 
         if (error) throw error;
         pendingSync = false;
@@ -169,8 +172,8 @@ function subscribeToRealtime() {
 
     supabaseClient.removeAllChannels();
 
-    supabaseClient
-        .channel('dashboard_changes')
+    const channel = supabaseClient.channel('dashboard_changes');
+    channel
         .on('postgres_changes', {
             event: '*',
             schema: 'public',
@@ -193,8 +196,12 @@ function subscribeToRealtime() {
                 }
             }
         })
-        .subscribe((status) => {
-            console.log('Realtime Status:', status);
+        .subscribe((status, err) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('Realtime conectado');
+            } else if (status === 'CHANNEL_ERROR') {
+                console.warn('Realtime error:', err);
+            }
         });
 }
 
