@@ -451,13 +451,9 @@ function initInventoryFilter() {
         wrapperId: 'filterModelWrapper',
         hiddenInputId: 'filterModelHidden',
         placeholder: 'Filtrar por modelo...',
-        options: modelOpts
+        options: modelOpts,
+        onChange: () => renderInventory()
     });
-    const filterInput = document.getElementById('filterModelWrapper_input');
-    if (filterInput) {
-        filterInput.addEventListener('change', () => setTimeout(renderInventory, 200));
-        filterInput.addEventListener('input', () => setTimeout(renderInventory, 200));
-    }
 }
 
 function populateSaleSerials() {
