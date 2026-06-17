@@ -246,58 +246,6 @@ function renderSales() {
             </tr>`;
     });
 
-    // Orden descendente: último creado primero
-    filtered.sort((a, b) => {
-        const da = new Date(a.createdAt || a.saleDate).getTime() || 0;
-        const db = new Date(b.createdAt || b.saleDate).getTime() || 0;
-        return db - da;
-    });
-
-    filtered.forEach((s) => {
-        if (!s) return;
-        const index = state.sales.indexOf(s);
-        const priceNum = parseFloat(s.price) || 0;
-        const costNum = getSaleCost(s);
-        const utility = priceNum - costNum;
-        const utilityColor = utility < 0 ? 'var(--vibrant-red)' : '#047481';
-        const margin = priceNum > 0 ? ((utility / priceNum) * 100).toFixed(0) : 0;
-
-        const retBtn = s.returned
-            ? `<span style="font-size:0.65rem; color:var(--vibrant-red); font-weight:800; background:rgba(238,66,78,0.1); padding:0.2rem 0.4rem; border-radius:100px;">DEVUELTO</span>`
-            : `<button onclick="openReturnModal('${s.serial}')" title="Registrar devolución" style="background:none; border:none; cursor:pointer; color:var(--vibrant-red); display:flex; align-items:center; padding:0.25rem;">
-                 <i data-lucide="rotate-ccw" style="width:16px;height:16px;"></i>
-               </button>`;
-
-        const eModel = escapeHtml(s.model);
-        const eSerial = escapeHtml(s.serial);
-        const eClient = escapeHtml(s.client);
-        const eSource = escapeHtml(s.source);
-        const safeRetBtn = s.returned
-            ? `<span style="font-size:0.65rem; color:var(--vibrant-red); font-weight:800; background:rgba(238,66,78,0.1); padding:0.2rem 0.4rem; border-radius:100px;">DEVUELTO</span>`
-            : `<button onclick="openReturnModal('${eSerial}')" title="Registrar devolución" style="background:none; border:none; cursor:pointer; color:var(--vibrant-red); display:flex; align-items:center; padding:0.25rem;">
-                 <i data-lucide="rotate-ccw" style="width:16px;height:16px;"></i>
-               </button>`;
-
-        tbody.innerHTML += `
-            <tr>
-                <td data-label="Fecha">${escapeHtml(s.saleDate)}</td>
-                <td data-label="Modelo">${eModel} <br><small>${eSerial}</small></td>
-                <td data-label="Cliente">${eClient}</td>
-                <td data-label="Precio"><strong>$${priceNum.toLocaleString()}</strong></td>
-                <td data-label="Utilidad" style="color: ${utilityColor}; font-weight: 700;">
-                    $${utility.toLocaleString()} <br><small style="color:var(--text-gray)">${margin}%</small>
-                </td>
-                <td data-label="Canal"><span class="badge" style="background:#E2E8F0; color:var(--deep-blue)">${eSource}</span></td>
-                <td data-label="Acciones">
-                    <div style="display:flex; gap:0.5rem; align-items:center;">
-                        <button onclick="editSale('${eSerial}')" style="background:none; border:none; color:var(--soft-blue); cursor:pointer;"><i data-lucide="pencil" size="18"></i></button>
-                        <button onclick="deleteSale('${eSerial}')" style="background:none; border:none; color:var(--vibrant-red); cursor:pointer;"><i data-lucide="trash-2" size="18"></i></button>
-                        ${safeRetBtn}
-                    </div>
-                </td>
-            </tr>`;
-    });
-
     const countEl = document.getElementById('salesResultCount');
     if (countEl) {
         countEl.innerText = saleDateRange

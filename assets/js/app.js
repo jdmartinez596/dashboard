@@ -625,7 +625,11 @@ function exportSalesXLSX() {
     filtered.forEach(s => {
         const devices = s.devices || [{ serial: s.serial, model: s.model, price: s.price }];
         devices.forEach(d => {
-            rows.push({ 'Fecha': s.saleDate || '', 'Serial': d.serial || '', 'Modelo': d.model || '', 'Cliente': s.client || '', 'Ciudad': s.city || '', 'Canal': s.source || '', 'Precio Venta': d.price || 0, 'Costo': getSaleCost(s), 'Utilidad': (d.price || 0) - getSaleCost(s), 'Margen %': getSaleCost(s) > 0 ? ((((d.price || 0) - getSaleCost(s)) / getSaleCost(s)) * 100).toFixed(1) + '%' : 'N/A' });
+            const item = state.inventory.find(i => i.serial === d.serial);
+            const cost = item ? (parseFloat(item.cost) || 0) : 0;
+            const util = (d.price || 0) - cost;
+            const margin = cost > 0 ? ((util / cost) * 100).toFixed(1) + '%' : 'N/A';
+            rows.push({ 'Fecha': s.saleDate || '', 'Serial': d.serial || '', 'Modelo': d.model || '', 'Cliente': s.client || '', 'Ciudad': s.city || '', 'Canal': s.source || '', 'Precio Venta': d.price || 0, 'Costo': cost, 'Utilidad': util, 'Margen %': margin });
         });
     });
     const totalVentas = rows.reduce((a, r) => a + r['Precio Venta'], 0);
@@ -763,7 +767,9 @@ function exportAccountingXLSX() {
     sales.forEach(s => {
         const devices = s.devices || [{ serial: s.serial, model: s.model, price: s.price }];
         devices.forEach(d => {
-            salesRows.push({ 'Fecha': s.saleDate, 'Serial': d.serial, 'Modelo': d.model, 'Cliente': s.client, 'Canal': s.source, 'Precio': d.price, 'Costo': getSaleCost(s), 'Utilidad': (d.price || 0) - getSaleCost(s) });
+            const item = state.inventory.find(i => i.serial === d.serial);
+            const cost = item ? (parseFloat(item.cost) || 0) : 0;
+            salesRows.push({ 'Fecha': s.saleDate, 'Serial': d.serial, 'Modelo': d.model, 'Cliente': s.client, 'Canal': s.source, 'Precio': d.price, 'Costo': cost, 'Utilidad': (d.price || 0) - cost });
         });
     });
     if (salesRows.length) { XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(salesRows), 'Ventas'); }
