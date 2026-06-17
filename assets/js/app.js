@@ -73,27 +73,11 @@ async function syncToSupabase() {
         console.log('Supabase guardando para user:', currentUser.id,
             'inv:', state.inventory?.length, 'ventas:', state.sales?.length);
 
-        // Estrategia: intentar insert, si ya existe -> update
-        // Funciona con cualquier esquema de tabla (id auto-incremental o texto)
-        const { error: insertError } = await supabaseClient
+        const { error } = await supabaseClient
             .from('dashboard_state')
-            .insert(payload);
+            .upsert(payload, { onConflict: 'user_id' });
 
-        if (insertError && insertError.code === '23505') {
-            // Duplicado — actualizar registro existente
-            console.log('Registro ya existe, actualizando...');
-            const { error: updateError } = await supabaseClient
-                .from('dashboard_state')
-                .update(payload)
-                .eq('user_id', currentUser.id);
-
-            if (updateError) throw updateError;
-        } else if (insertError) {
-            // Otro error — podría ser RLS o tabla no existe
-            throw insertError;
-        } else {
-            console.log('Insertado nuevo registro');
-        }
+        if (error) throw error;
 
         pendingSync = false;
         showSyncStatus('synced');
@@ -239,7 +223,6 @@ function subscribeToRealtime() {
             table: 'dashboard_state',
             filter: `user_id=eq.${currentUser.id}`
         }, (payload) => {
-            console.log('Realtime Change Received:', payload);
             if (payload.new && payload.new.data) {
                 const cloudTime = new Date(payload.new.updated_at).getTime();
                 const localKey = LOCAL_STORAGE_KEY + '_' + currentUser.id;
@@ -259,7 +242,7 @@ function subscribeToRealtime() {
             if (status === 'SUBSCRIBED') {
                 console.log('Realtime conectado');
             } else if (status === 'CHANNEL_ERROR') {
-                console.warn('Realtime error:', err);
+                if (err) console.warn('Realtime no disponible (modo lectura-escritura activo)');
             }
         });
 }
@@ -583,25 +566,8 @@ function updateChartsData() {
     sourceChart.update();
 }
 
-// ── Laser Scanner ─────────────────────────────────────────────
-// initLaserScanner() y handleLaserScan() se encuentran en assets/js/scanner.js
-// toggleLaserBar() y hideLaserBar() también están en scanner.js y lo sobrescriben
-
-function toggleLaserBar() {
-    const bar = document.getElementById('laserBar');
-    if (!bar) return;
-    const visible = bar.style.display === 'flex';
-    bar.style.display = visible ? 'none' : 'flex';
-    if (!visible) {
-        const li = document.getElementById('laserInput');
-        if (li) li.focus();
-    }
-}
-
-function hideLaserBar() {
-    const bar = document.getElementById('laserBar');
-    if (bar) bar.style.display = 'none';
-}
+// initLaserScanner(), handleLaserScan(), toggleLaserBar(), hideLaserBar()
+// se encuentran en assets/js/scanner.js
 
 // ── Exports ────────────────────────────────────────────────────
 function exportSalesXLSX() {
@@ -817,8 +783,12 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             }
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;
+            Object.keys(localStorage).forEach(k => {
+                if (k.startsWith('sb-') || k === LOCAL_STORAGE_KEY) localStorage.removeItem(k);
+            });
             document.getElementById('loginView').style.display = 'flex';
             document.getElementById('appView').style.display = 'none';
+            showToast('Sesión expirada. Inicia sesión nuevamente.', 'info');
         }
     }, 0);
 });
