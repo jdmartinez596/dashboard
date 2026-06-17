@@ -1,4 +1,4 @@
-# Partners Bold | Dashboard de Gestión
+# Gest Inventary
 
 Sistema de gestión integral para puntos de venta de equipos celulares. Administra inventario, ventas, finanzas, devoluciones y genera reportes contables con trazabilidad completa.
 
@@ -25,7 +25,7 @@ Sistema de gestión integral para puntos de venta de equipos celulares. Administ
 ## Estructura del Proyecto
 
 ```
-partners-bold/
+gest-inventary/
 ├── index.html
 ├── assets/
 │   ├── css/styles.css

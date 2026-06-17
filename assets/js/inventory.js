@@ -32,7 +32,7 @@ if (invForm) invForm.onsubmit = function (e) {
 
     if (editingInventoryIndex === -1) {
         if (state.inventory.find(i => i.serial === serial)) { alert('Serial duplicado.'); return; }
-        state.inventory.push({ serial, model, imei, cost, entryDate: entryDate, status: 'Disponible' });
+        state.inventory.push({ serial, model, imei, cost, entryDate: entryDate, status: 'Disponible', createdAt: new Date().toISOString() });
     } else {
         state.inventory[editingInventoryIndex] = { 
             ...state.inventory[editingInventoryIndex], 
@@ -49,6 +49,8 @@ function renderInventory() {
     const search = searchInput ? searchInput.value.toLowerCase() : '';
     const modelFilter = document.getElementById('filterModelHidden') ?
         document.getElementById('filterModelHidden').value : '';
+    const statusFilter = document.getElementById('filterInvStatus') ?
+        document.getElementById('filterInvStatus').value : '';
     const invPeriod = document.getElementById('filterInvPeriod')
         ? document.getElementById('filterInvPeriod').value : '';
     const invFrom = document.getElementById('filterInvFrom')
@@ -69,13 +71,14 @@ function renderInventory() {
             const d = parseDateLocal(i.entryDate);
             matchDate = d && d >= invDateRange.from && d <= invDateRange.to;
         }
-        return matchSearch && matchModel && matchDate;
+        const matchStatus = !statusFilter || i.status === statusFilter;
+        return matchSearch && matchModel && matchDate && matchStatus;
     });
 
-    // Orden cronológico descendente
+    // Orden descendente: último creado primero
     filteredInv.sort((a, b) => {
-        const da = parseDateLocal(a.entryDate) || 0;
-        const db = parseDateLocal(b.entryDate) || 0;
+        const da = new Date(a.createdAt || a.entryDate).getTime() || 0;
+        const db = new Date(b.createdAt || b.entryDate).getTime() || 0;
         return db - da;
     });
 

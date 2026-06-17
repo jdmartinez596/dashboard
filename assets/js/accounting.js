@@ -229,8 +229,8 @@ function renderAccountingTrace() {
 
     let traceList = [...state.inventory];
     traceList.sort((a, b) => {
-        const da = parseDateLocal(a.entryDate) || 0;
-        const db = parseDateLocal(b.entryDate) || 0;
+        const da = new Date(a.createdAt || a.entryDate).getTime() || 0;
+        const db = new Date(b.createdAt || b.entryDate).getTime() || 0;
         return db - da;
     });
 

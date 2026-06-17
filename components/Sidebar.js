@@ -22,7 +22,7 @@ function renderSidebar(containerId, activeView, userData) {
     container.innerHTML = `
         <div class="sidebar">
             <div class="logo">
-                <img src="assets/img/logo.svg" alt="Partners Bold" height="40">
+                <img src="assets/img/logo.svg" alt="Gest Inventary" height="40">
                 <span>${escapeHtml(bizName)}</span>
             </div>
             <ul class="nav-links">

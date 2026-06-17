@@ -135,12 +135,12 @@ if (saleForm) saleForm.onsubmit = function (e) {
             allOk = false; return;
         }
         item.status = 'Vendido';
-        state.sales.push({ serial, model: item.model, cost: item.cost, price, client, city, source, saleDate });
+        state.sales.push({ serial, model: item.model, cost: item.cost, price, client, city, source, saleDate, createdAt: new Date().toISOString() });
         state.transactions.push({
             id: Date.now() + Math.random(),
             type: 'income', category: 'Venta',
             description: `Venta Equipo — ${serial} — Cliente: ${client}`,
-            amount: price, date: saleDate
+            amount: price, date: saleDate, createdAt: new Date().toISOString()
         });
     });
 
@@ -175,10 +175,10 @@ function renderSales() {
         return matchSearch && matchDate;
     });
 
-    // Orden cronológico descendente
+    // Orden descendente: último creado primero
     filtered.sort((a, b) => {
-        const da = parseDateLocal(a.saleDate) || 0;
-        const db = parseDateLocal(b.saleDate) || 0;
+        const da = new Date(a.createdAt || a.saleDate).getTime() || 0;
+        const db = new Date(b.createdAt || b.saleDate).getTime() || 0;
         return db - da;
     });
 
@@ -339,7 +339,8 @@ if (returnForm) returnForm.onsubmit = async (e) => {
         condition: condition,
         action: action,
         notes: document.getElementById('m_ret_notes').value,
-        source: s.source || ''
+        source: s.source || '',
+        createdAt: new Date().toISOString()
     };
 
     // Agregar a state.returns
@@ -371,7 +372,8 @@ if (returnForm) returnForm.onsubmit = async (e) => {
         category: 'Devolución',
         description: `Devolución ${ret.id} — ${escapeHtml(s.serial)} — Cliente: ${escapeHtml(s.client || 'N/A')}`,
         amount: s.price || 0,
-        date: ret.returnDate
+        date: ret.returnDate,
+        createdAt: new Date().toISOString()
     });
 
     await saveState();

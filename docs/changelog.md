@@ -3,7 +3,7 @@
 ## 1.2.0 (Junio 2026)
 
 ### Mejoras
-- Reorganización completa del proyecto en estructura `partners-bold/`
+- Reorganización completa del proyecto en estructura `gest-inventary/`
 - Separación de HTML, CSS y JS en archivos independientes
 - Creación de módulos especializados por funcionalidad
 - Nuevos componentes: Sidebar, Modal, Charts

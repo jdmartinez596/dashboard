@@ -1,4 +1,4 @@
-# Manual de Usuario — Partners Bold Dashboard
+# Manual de Usuario — Gest Inventary
 
 ## Índice
 

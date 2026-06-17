@@ -622,7 +622,7 @@ function exportSalesXLSX() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Ventas');
     const periodLabel = salePeriod === 'custom' ? `${saleFrom}_${saleTo}` : salePeriod || 'todas';
-    XLSX.writeFile(wb, `Ventas_PartnersBold_${periodLabel}_${getLocalDateString()}.xlsx`);
+    XLSX.writeFile(wb, `Ventas_GestInventary_${periodLabel}_${getLocalDateString()}.xlsx`);
 }
 
 function exportInventoryXLSX() {
@@ -661,7 +661,7 @@ function exportInventoryXLSX() {
     ws['!cols'] = [{ wch: 14 }, { wch: 14 }, { wch: 22 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
-    XLSX.writeFile(wb, `Inventario_PartnersBold_${getLocalDateString()}.xlsx`);
+    XLSX.writeFile(wb, `Inventario_GestInventary_${getLocalDateString()}.xlsx`);
 }
 
 function exportReturnsXLSX() {
@@ -672,7 +672,7 @@ function exportReturnsXLSX() {
     ws['!cols'] = [{ wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 22 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 20 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Devoluciones');
-    XLSX.writeFile(wb, `Devoluciones_PartnersBold_${getLocalDateString()}.xlsx`);
+    XLSX.writeFile(wb, `Devoluciones_GestInventary_${getLocalDateString()}.xlsx`);
 }
 
 function exportTraceXLSX() {
@@ -686,7 +686,7 @@ function exportTraceXLSX() {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Trazabilidad Equipos");
-    XLSX.writeFile(wb, `Trazabilidad_PartnersBold_${getLocalDateString()}.xlsx`);
+    XLSX.writeFile(wb, `Trazabilidad_GestInventary_${getLocalDateString()}.xlsx`);
 }
 
 function exportAccountingXLSX() {
@@ -718,7 +718,7 @@ function exportAccountingXLSX() {
 
     const wb = XLSX.utils.book_new();
     const summaryRows = [
-        ['ESTADO DE RESULTADOS', 'Partners Bold'],
+        ['ESTADO DE RESULTADOS', 'Gest Inventary'],
         ['Período:', period === 'custom' ? `${from} a ${to}` : period],
         ['Generado el:', getLocalDateString()],
         [],
@@ -756,7 +756,7 @@ function exportAccountingXLSX() {
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(retRows), 'Devoluciones');
     }
 
-    XLSX.writeFile(wb, `Contabilidad_PartnersBold_${getLocalDateString()}.xlsx`);
+    XLSX.writeFile(wb, `Contabilidad_GestInventary_${getLocalDateString()}.xlsx`);
 }
 
 // ── Settings (definidas en settings.js) ─────────────────────────

@@ -18,7 +18,7 @@ if (txForm) txForm.onsubmit = function (e) {
     const id = editingFinanceIndex !== -1 ? state.transactions[editingFinanceIndex].id : Date.now();
 
     if (editingFinanceIndex === -1) {
-        state.transactions.push({ id, type, category, description, amount, date });
+        state.transactions.push({ id, type, category, description, amount, date, createdAt: new Date().toISOString() });
     } else {
         state.transactions[editingFinanceIndex] = { id, type, category, description, amount, date };
     }
@@ -52,10 +52,10 @@ function renderFinance() {
         return (!typeFilter || t.type === typeFilter) && (!catFilter || t.category === catFilter);
     });
 
-    // Orden cronológico descendente
+    // Orden descendente: último creado primero
     filteredTxList.sort((a, b) => {
-        const da = parseDateLocal(a.date) || 0;
-        const db = parseDateLocal(b.date) || 0;
+        const da = new Date(a.createdAt || a.date).getTime() || 0;
+        const db = new Date(b.createdAt || b.date).getTime() || 0;
         return db - da;
     });
 

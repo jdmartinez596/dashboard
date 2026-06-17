@@ -12,8 +12,12 @@ function renderReturns() {
                 </td>
             </tr>`;
     } else {
-        // Ordenar por fecha más reciente
-        [...returns].reverse().forEach(r => {
+        // Orden descendente: último creado primero
+        [...returns].sort((a, b) => {
+            const da = new Date(a.createdAt || a.returnDate).getTime() || 0;
+            const db = new Date(b.createdAt || b.returnDate).getTime() || 0;
+            return db - da;
+        }).forEach(r => {
             const impact = r.salePrice || 0;
             const actionColor =
                 r.action === 'Reingreso' ? '#047481' :
