@@ -912,15 +912,25 @@ tr:last-child td {
         gap: 0.5rem;
     }
     .stock-label {
-        width: 75px;
-        font-size: 0.75rem;
+        width: 65px;
+        font-size: 0.65rem;
     }
     .stock-count {
-        font-size: 0.75rem;
-        width: 30px;
+        font-size: 0.65rem;
+        width: 24px;
     }
     .stock-bar-container {
-        gap: 0.9rem;
+        gap: 0.65rem;
+        flex: 1;
+    }
+    .stock-item {
+        gap: 0.5rem;
+    }
+    .progress-bg {
+        height: 8px;
+    }
+    .chart-container {
+        overflow-y: auto;
     }
     .searchable-select-dropdown {
         max-height: 180px;
