@@ -65,7 +65,7 @@ function renderInventory() {
 
     let filteredInv = state.inventory.filter(i => {
         const matchSearch = (i.serial || '').toLowerCase().includes(search) || (i.imei || '').toLowerCase().includes(search);
-        const matchModel = !modelFilter || i.model === modelFilter;
+        const matchModel = !modelFilter || (i.model || '').trim().toLowerCase() === modelFilter.trim().toLowerCase();
         let matchDate = true;
         if (invDateRange) {
             const d = parseDateLocal(i.entryDate);

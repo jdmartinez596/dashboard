@@ -451,9 +451,15 @@ function initInventoryFilter() {
         wrapperId: 'filterModelWrapper',
         hiddenInputId: 'filterModelHidden',
         placeholder: 'Filtrar por modelo...',
-        options: modelOpts,
-        onChange: () => renderInventory()
+        options: modelOpts
     });
+    const dropdown = document.getElementById('filterModelWrapper_dropdown');
+    if (dropdown) {
+        dropdown.addEventListener('click', (e) => {
+            const opt = e.target.closest('.searchable-select-option[data-value]');
+            if (opt) renderInventory();
+        });
+    }
 }
 
 function populateSaleSerials() {
