@@ -6,6 +6,95 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+// ── SEGURIDAD: Cifrado localStorage (AES-256-GCM) ──────────────
+function supportsCrypto() {
+    return window.crypto && window.crypto.subtle;
+}
+
+async function getEncryptionKey() {
+    const keyData = currentUser?.id + '|' + SUPABASE_KEY;
+    const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(keyData),
+        'PBKDF2',
+        false,
+        ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+        {
+            name: 'PBKDF2',
+            salt: new TextEncoder().encode('bold_dashboard_salt_v1'),
+            iterations: 200000,
+            hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+    );
+}
+
+async function encryptStore(data) {
+    if (!supportsCrypto()) {
+        console.warn('Crypto API no disponible, guardando en plano');
+        return JSON.stringify(data);
+    }
+    try {
+        const key = await getEncryptionKey();
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encoded = new TextEncoder().encode(JSON.stringify(data));
+        const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+        const combined = new Uint8Array(iv.length + encrypted.byteLength);
+        combined.set(iv, 0);
+        combined.set(new Uint8Array(encrypted), iv.length);
+        return 'enc:' + btoa(String.fromCharCode(...new Uint8Array(combined)));
+    } catch (e) {
+        console.error('Error cifrando datos:', e);
+        return JSON.stringify(data);
+    }
+}
+
+async function decryptStored(encoded) {
+    if (!encoded || typeof encoded !== 'string') return null;
+    if (!encoded.startsWith('enc:')) {
+        // Datos en plano (migración desde versión anterior)
+        try { return JSON.parse(encoded); } catch (e) { return null; }
+    }
+    if (!supportsCrypto()) {
+        console.warn('Crypto API no disponible, no se puede descifrar');
+        return null;
+    }
+    try {
+        const key = await getEncryptionKey();
+        const raw = Uint8Array.from(atob(encoded.slice(4)), c => c.charCodeAt(0));
+        const iv = raw.slice(0, 12);
+        const ciphertext = raw.slice(12);
+        const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+        return JSON.parse(new TextDecoder().decode(decrypted));
+    } catch (e) {
+        console.error('Error descifrando datos:', e);
+        return null;
+    }
+}
+
+// ── SEGURIDAD: Auto-logout por inactividad ─────────────────────
+let inactivityTimer = null;
+
+function resetInactivityTimer() {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+        if (currentUser && typeof supabaseClient !== 'undefined') {
+            console.warn('Sesión expirada por inactividad');
+            supabaseClient.auth.signOut();
+            showToast('Sesión cerrada por inactividad', 'warning');
+        }
+    }, 30 * 60 * 1000); // 30 minutos
+}
+
+['click', 'keydown', 'mousemove', 'touchstart', 'scroll', 'focus'].forEach(ev =>
+    document.addEventListener(ev, resetInactivityTimer, { passive: true })
+);
+
 // --- Date Helpers ---
 function getLocalDateString(date = new Date()) {
     const year = date.getFullYear();

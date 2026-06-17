@@ -26,8 +26,14 @@ async function saveState() {
     if (!currentUser) return;
     const key = LOCAL_STORAGE_KEY + '_' + currentUser.id;
 
-    // Guardar en localStorage inmediatamente
-    localStorage.setItem(key, JSON.stringify(state));
+    // Guardar en localStorage inmediatamente (cifrado)
+    try {
+        const encrypted = await encryptStore(state);
+        localStorage.setItem(key, encrypted);
+    } catch (e) {
+        console.warn('Fallo cifrado localStorage, guardando en plano:', e);
+        localStorage.setItem(key, JSON.stringify(state));
+    }
     localStorage.setItem(key + '_time', Date.now().toString());
 
     // Actualizar UI con datos actuales
@@ -114,7 +120,10 @@ async function loadState() {
 
     const saved = localStorage.getItem(localKey);
     if (saved) {
-        try { state = JSON.parse(saved); } catch (e) { }
+        try {
+            const decrypted = await decryptStored(saved);
+            if (decrypted) state = decrypted;
+        } catch (e) { }
     }
 
     if (isOnline) {
@@ -144,7 +153,12 @@ async function loadState() {
 
                 if (cloudTime >= localTime) {
                     state = data.data;
-                    localStorage.setItem(localKey, JSON.stringify(state));
+                    try {
+                        const encrypted = await encryptStore(state);
+                        localStorage.setItem(localKey, encrypted);
+                    } catch (e) {
+                        localStorage.setItem(localKey, JSON.stringify(state));
+                    }
                     localStorage.setItem(localKey + '_time', cloudTime.toString());
                     console.log('Usando datos de la nube');
                 } else {
@@ -769,6 +783,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
                 const appView = document.getElementById('appView');
                 if (appView) appView.style.display = 'block';
                 loadState();
+                resetInactivityTimer();
             }
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;
