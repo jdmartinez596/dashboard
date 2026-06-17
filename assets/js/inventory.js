@@ -93,7 +93,10 @@ function renderInventory() {
             'var(--text-gray)';
 
         const entryDate = parseDateLocal(i.entryDate);
-        const sale = state.sales.find(s => s.serial === i.serial);
+        const sale = state.sales.find(s => {
+            if (s.devices) return s.devices.some(d => d.serial === i.serial);
+            return s.serial === i.serial;
+        });
         let daysText = '-';
         let stagnantStyle = '';
 
@@ -163,7 +166,10 @@ function editInventory(serial) {
 function deleteItem(serial) {
     if (confirm('¿Eliminar este equipo? Se borrarán también sus ventas y registros financieros asociados.')) {
         // 1. Limpiar ventas y sus finanzas
-        const sale = state.sales.find(s => s.serial === serial);
+        const sale = state.sales.find(s => {
+            if (s.devices) return s.devices.some(d => d.serial === serial);
+            return s.serial === serial;
+        });
         if (sale) {
             // Eliminar ingreso de la venta
             state.transactions = state.transactions.filter(t => 
@@ -176,7 +182,14 @@ function deleteItem(serial) {
                     !(t.category === 'Devolución' && t.description.includes(serial))
                 );
             }
-            state.sales = state.sales.filter(s => s.serial !== serial);
+            if (sale.devices) {
+                sale.devices = sale.devices.filter(d => d.serial !== serial);
+                if (sale.devices.length === 0) {
+                    state.sales = state.sales.filter(s => s.id !== sale.id);
+                }
+            } else {
+                state.sales = state.sales.filter(s => s.serial !== serial);
+            }
         }
         
         // 2. Eliminar del inventario

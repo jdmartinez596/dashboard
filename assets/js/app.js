@@ -16,6 +16,7 @@ let editingInventoryIndex = -1;
 let editingFinanceIndex = -1;
 let editingSaleIndex = -1;
 let currentReturnSaleIndex = -1;
+let currentReturnSerial = '';
 let isOnline = navigator.onLine;
 let pendingSync = false;
 let currentUser = null;
@@ -360,17 +361,22 @@ function closeModal(id) {
 }
 
 function openReturnModal(serial) {
-    const index = state.sales.findIndex(s => s.serial === serial);
+    const index = state.sales.findIndex(s => {
+        if (s.devices) return s.devices.some(d => d.serial === serial);
+        return s.serial === serial;
+    });
     if (index === -1) return;
     currentReturnSaleIndex = index;
+    currentReturnSerial = serial;
     const s = state.sales[index];
     if (!s) return;
 
-    const item = state.inventory.find(i => i.serial === s.serial);
+    const device = s.devices ? s.devices.find(d => d.serial === serial) : s;
+    const item = state.inventory.find(i => i.serial === serial);
     const cost = item ? (item.cost || 0) : 0;
 
-    const eSerial = escapeHtml(s.serial);
-    const eModel = escapeHtml(s.model || '');
+    const eSerial = escapeHtml(serial);
+    const eModel = escapeHtml(device.model || '');
     const eClient = escapeHtml(s.client || 'N/A');
     const eCity = escapeHtml(s.city || 'N/A');
     const eSaleDate = escapeHtml(s.saleDate || 'N/A');
@@ -380,8 +386,8 @@ function openReturnModal(serial) {
         📦 <b>Serial:</b> ${eSerial} — ${eModel}<br>
         👤 <b>Cliente:</b> ${eClient} (${eCity})<br>
         📅 <b>Fecha venta:</b> ${eSaleDate}<br>
-        💵 <b>Precio venta:</b> $${(s.price || 0).toLocaleString()}<br>
-        📊 <b>Utilidad original:</b> $${((s.price || 0) - cost).toLocaleString()}
+        💵 <b>Precio venta:</b> $${(device.price || 0).toLocaleString()}<br>
+        📊 <b>Utilidad original:</b> $${((device.price || 0) - cost).toLocaleString()}
     `;
 
     const retDateEl = document.getElementById('m_ret_date');
@@ -397,6 +403,7 @@ function closeReturnModal() {
     const retForm = document.getElementById('returnForm');
     if (retForm) retForm.reset();
     currentReturnSaleIndex = -1;
+    currentReturnSerial = '';
 }
 
 // ── Searchable Select ─────────────────────────────────────────
@@ -538,7 +545,7 @@ function updateChartsData() {
         const total = state.sales.filter(s => {
             const sd = parseDateLocal(s.saleDate);
             return sd && sd.getMonth() === d.getMonth() && sd.getFullYear() === d.getFullYear();
-        }).reduce((acc, s) => acc + s.price, 0);
+        }).reduce((acc, s) => acc + getSaleTotal(s), 0);
         data.push(total);
     }
     salesChart.data.labels = labels;
@@ -605,7 +612,8 @@ function exportSalesXLSX() {
     const saleDateRange = getDateRangeFilter(salePeriod, saleFrom, saleTo);
 
     const filtered = state.sales.filter(s => {
-        const matchSearch = (s.client || '').toLowerCase().includes(search) || (s.serial || '').toLowerCase().includes(search) || (s.city || '').toLowerCase().includes(search);
+        const serials = s.devices ? s.devices.map(d => d.serial) : [s.serial];
+        const matchSearch = (s.client || '').toLowerCase().includes(search) || serials.some(ser => ser.toLowerCase().includes(search)) || (s.city || '').toLowerCase().includes(search);
         let matchDate = true;
         if (saleDateRange) { const d = parseDateLocal(s.saleDate); matchDate = d && d >= saleDateRange.from && d <= saleDateRange.to; }
         return matchSearch && matchDate;
@@ -613,8 +621,14 @@ function exportSalesXLSX() {
 
     if (filtered.length === 0) { alert('No hay ventas para exportar.'); return; }
 
-    const rows = filtered.map(s => ({ 'Fecha': s.saleDate || '', 'Serial': s.serial || '', 'Modelo': s.model || '', 'Cliente': s.client || '', 'Ciudad': s.city || '', 'Canal': s.source || '', 'Precio Venta': s.price || 0, 'Costo': getSaleCost(s), 'Utilidad': (s.price || 0) - getSaleCost(s), 'Margen %': getSaleCost(s) > 0 ? ((((s.price || 0) - getSaleCost(s)) / getSaleCost(s)) * 100).toFixed(1) + '%' : 'N/A' }));
-    const totalVentas = filtered.reduce((a, s) => a + (s.price || 0), 0);
+    const rows = [];
+    filtered.forEach(s => {
+        const devices = s.devices || [{ serial: s.serial, model: s.model, price: s.price }];
+        devices.forEach(d => {
+            rows.push({ 'Fecha': s.saleDate || '', 'Serial': d.serial || '', 'Modelo': d.model || '', 'Cliente': s.client || '', 'Ciudad': s.city || '', 'Canal': s.source || '', 'Precio Venta': d.price || 0, 'Costo': getSaleCost(s), 'Utilidad': (d.price || 0) - getSaleCost(s), 'Margen %': getSaleCost(s) > 0 ? ((((d.price || 0) - getSaleCost(s)) / getSaleCost(s)) * 100).toFixed(1) + '%' : 'N/A' });
+        });
+    });
+    const totalVentas = rows.reduce((a, r) => a + r['Precio Venta'], 0);
     rows.push({ 'Fecha': 'TOTAL', 'Serial': '', 'Modelo': '', 'Cliente': `${filtered.length} ventas`, 'Ciudad': '', 'Canal': '', 'Precio Venta': totalVentas, 'Costo': '', 'Utilidad': rows.reduce((a, r) => a + r['Utilidad'], 0), 'Margen %': '' });
 
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -677,10 +691,14 @@ function exportReturnsXLSX() {
 
 function exportTraceXLSX() {
     const data = state.inventory.map(i => {
-        const sale = state.sales.find(s => s.serial === i.serial);
+        const sale = state.sales.find(s => {
+            if (s.devices) return s.devices.some(d => d.serial === i.serial);
+            return s.serial === i.serial;
+        });
+        const device = sale && sale.devices ? sale.devices.find(d => d.serial === i.serial) : sale;
         const ret = (state.returns || []).find(r => r.serial === i.serial);
         const cost = parseFloat(i.cost) || 0;
-        const price = sale ? (parseFloat(sale.price) || 0) : 0;
+        const price = device ? (parseFloat(device.price) || 0) : 0;
         return { 'Fecha Ingreso': i.entryDate, 'Modelo': i.model, 'Serial': i.serial, 'Costo Compra': cost, 'Fecha Venta': sale ? sale.saleDate : 'N/A', 'Precio Venta': price, 'Utilidad': sale ? (price - cost) : 0, 'Canal': sale ? sale.source : 'N/A', 'Cliente': sale ? sale.client : 'N/A', 'Estado Actual': i.status, 'Fecha Devolución': ret ? ret.returnDate : 'N/A', 'Motivo Devolución': ret ? ret.reason : 'N/A' };
     });
     const ws = XLSX.utils.json_to_sheet(data);
@@ -701,7 +719,7 @@ function exportAccountingXLSX() {
     const returns = (state.returns || []).filter(r => filterFn(r.returnDate));
     const invEntries = state.inventory.filter(i => filterFn(i.entryDate));
 
-    const totalSales = sales.reduce((a, s) => a + (parseFloat(s.price) || 0), 0);
+    const totalSales = sales.reduce((a, s) => a + getSaleTotal(s), 0);
     const otherIncome = transactions.filter(t => t.type === 'income' && t.category !== 'Venta').reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
     const totalIncome = totalSales + otherIncome;
     const costMerchSold = sales.reduce((a, s) => a + getSaleCost(s), 0);
@@ -741,7 +759,13 @@ function exportAccountingXLSX() {
     wsSummary['!cols'] = [{ wch: 35 }, { wch: 16 }];
     XLSX.utils.book_append_sheet(wb, wsSummary, "Resumen P&G");
 
-    const salesRows = sales.map(s => ({ 'Fecha': s.saleDate, 'Serial': s.serial, 'Modelo': s.model, 'Cliente': s.client, 'Canal': s.source, 'Precio': s.price, 'Costo': getSaleCost(s), 'Utilidad': (s.price || 0) - getSaleCost(s) }));
+    const salesRows = [];
+    sales.forEach(s => {
+        const devices = s.devices || [{ serial: s.serial, model: s.model, price: s.price }];
+        devices.forEach(d => {
+            salesRows.push({ 'Fecha': s.saleDate, 'Serial': d.serial, 'Modelo': d.model, 'Cliente': s.client, 'Canal': s.source, 'Precio': d.price, 'Costo': getSaleCost(s), 'Utilidad': (d.price || 0) - getSaleCost(s) });
+        });
+    });
     if (salesRows.length) { XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(salesRows), 'Ventas'); }
 
     const expCats = {};

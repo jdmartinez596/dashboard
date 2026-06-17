@@ -42,7 +42,7 @@ function renderAccounting() {
     const returns = (state.returns || []).filter(r => filterFn(r.returnDate));
     const inventoryEntries = state.inventory.filter(i => filterFn(i.entryDate));
 
-    const totalSales = sales.reduce((acc, s) => acc + (parseFloat(s.price) || 0), 0);
+    const totalSales = sales.reduce((acc, s) => acc + getSaleTotal(s), 0);
     const otherIncome = transactions.filter(t => t.type === 'income' && t.category !== 'Venta').reduce((acc, t) => acc + (parseFloat(t.amount) || 0), 0);
     const totalIncome = totalSales + otherIncome;
 
@@ -55,7 +55,10 @@ function renderAccounting() {
     const openingStock = state.inventory.filter(i => {
         const entryDate = parseDateLocal(i.entryDate);
         if (!entryDate || (range && entryDate >= range.from)) return false;
-        const sale = state.sales.find(s => s.serial === i.serial);
+        const sale = state.sales.find(s => {
+            if (s.devices) return s.devices.some(d => d.serial === i.serial);
+            return s.serial === i.serial;
+        });
         if (sale) {
             const saleDate = parseDateLocal(sale.saleDate);
             if (saleDate && (range && saleDate < range.from)) return false;
@@ -66,7 +69,10 @@ function renderAccounting() {
     const closingStock = state.inventory.filter(i => {
         const entryDate = parseDateLocal(i.entryDate);
         if (!entryDate || (range && entryDate > range.to)) return false;
-        const sale = state.sales.find(s => s.serial === i.serial);
+        const sale = state.sales.find(s => {
+            if (s.devices) return s.devices.some(d => d.serial === i.serial);
+            return s.serial === i.serial;
+        });
         if (sale) {
             const saleDate = parseDateLocal(sale.saleDate);
             if (saleDate && (range && saleDate <= range.to)) return false;
@@ -133,7 +139,10 @@ function renderAccounting() {
     if (document.getElementById('acc-final-total-income')) document.getElementById('acc-final-total-income').innerText = `$${totalIncome.toLocaleString()}`;
 
     const salesModel = {};
-    sales.forEach(s => { salesModel[s.model] = (salesModel[s.model] || 0) + parseFloat(s.price); });
+    sales.forEach(s => {
+        const devices = s.devices || [{ model: s.model, price: s.price }];
+        devices.forEach(d => { salesModel[d.model] = (salesModel[d.model] || 0) + parseFloat(d.price); });
+    });
     let modelHtml = '';
     Object.entries(salesModel).sort((a,b) => b[1] - a[1]).forEach(([mod, val]) => {
         modelHtml += `<div class="report-row" style="font-size:0.85rem; padding-left:1rem; border-bottom:none;"><span>${escapeHtml(mod)}</span><span>$${val.toLocaleString()}</span></div>`;
@@ -141,7 +150,7 @@ function renderAccounting() {
     if (document.getElementById('acc-sales-by-model')) document.getElementById('acc-sales-by-model').innerHTML = modelHtml || '<div style="font-size:0.8rem; color:var(--text-gray); padding-left:1rem;">N/A</div>';
 
     const salesSource = {};
-    sales.forEach(s => { salesSource[s.source] = (salesSource[s.source] || 0) + parseFloat(s.price); });
+    sales.forEach(s => { salesSource[s.source] = (salesSource[s.source] || 0) + getSaleTotal(s); });
     let sourceHtml = '';
     Object.entries(salesSource).sort((a,b) => b[1] - a[1]).forEach(([src, val]) => {
         sourceHtml += `<div class="report-row" style="font-size:0.85rem; padding-left:1rem; border-bottom:none;"><span>${escapeHtml(src)}</span><span>$${val.toLocaleString()}</span></div>`;
@@ -187,10 +196,16 @@ function renderAccounting() {
     const topSrcVal = Object.entries(salesSource).sort((a,b) => b[1] - a[1])[0];
     if (document.getElementById('acc-met-top-source')) document.getElementById('acc-met-top-source').innerText = topSrcVal ? topSrcVal[0] : 'N/A';
 
-    const soldInPeriod = state.inventory.filter(i => i.status === 'Vendido' && sales.some(s => s.serial === i.serial));
+    const soldInPeriod = state.inventory.filter(i => i.status === 'Vendido' && sales.some(s => {
+        if (s.devices) return s.devices.some(d => d.serial === i.serial);
+        return s.serial === i.serial;
+    }));
     let totalDays = 0;
     soldInPeriod.forEach(i => {
-        const sale = sales.find(s => s.serial === i.serial);
+        const sale = sales.find(s => {
+            if (s.devices) return s.devices.some(d => d.serial === i.serial);
+            return s.serial === i.serial;
+        });
         if (sale) {
             const start = parseDateLocal(i.entryDate);
             const end = parseDateLocal(sale.saleDate);
@@ -236,10 +251,14 @@ function renderAccountingTrace() {
 
     traceList.forEach(i => {
         if (query && !i.serial.toLowerCase().includes(query) && !i.model.toLowerCase().includes(query)) return;
-        const sale = state.sales.find(s => s.serial === i.serial);
+        const sale = state.sales.find(s => {
+            if (s.devices) return s.devices.some(d => d.serial === i.serial);
+            return s.serial === i.serial;
+        });
+        const device = sale && sale.devices ? sale.devices.find(d => d.serial === i.serial) : sale;
         const ret = (state.returns || []).find(r => r.serial === i.serial);
         const costNum = parseFloat(i.cost) || 0;
-        const priceNum = sale ? (parseFloat(sale.price) || 0) : 0;
+        const priceNum = device ? (parseFloat(device.price) || 0) : 0;
         const utility = sale ? (priceNum - costNum) : 0;
         const statusColor = i.status === 'Disponible' ? '#047481' : i.status === 'Vendido' ? 'var(--deep-blue)' : i.status === 'Devuelto' ? 'var(--vibrant-red)' : i.status === 'Garantía' ? '#B7791F' : '#718096';
         const eSerial = escapeHtml(i.serial);

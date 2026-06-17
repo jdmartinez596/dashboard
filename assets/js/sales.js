@@ -95,13 +95,21 @@ if (saleForm) saleForm.onsubmit = function (e) {
 
     // --- EDIT MODE ---
     if (editingSaleIndex !== -1) {
-        const priceEl = document.querySelector('#saleDeviceList [id^="sale-price-"]');
-        const price = parseFloat(priceEl?.value);
-        if (!price || price <= 0) { alert('Ingresa un precio válido.'); return; }
-        const oldSerial = state.sales[editingSaleIndex].serial;
-        state.sales[editingSaleIndex] = { ...state.sales[editingSaleIndex], price, client, city, source, saleDate };
-        const trans = state.transactions.find(t => t.type === 'income' && t.category === 'Venta' && t.description.includes(oldSerial));
-        if (trans) { trans.amount = price; trans.date = saleDate; trans.description = `Venta Equipo — ${oldSerial} — Cliente: ${client}`; }
+        const priceEls = document.querySelectorAll('#saleDeviceList [id^="sale-price-"]');
+        const prices = [...priceEls].map(el => parseFloat(el.value));
+        if (prices.some(p => !p || p <= 0)) { alert('Ingresa precios válidos.'); return; }
+        const s = state.sales[editingSaleIndex];
+        if (s.devices) {
+            s.devices.forEach((d, i) => { d.price = prices[i] || d.price; });
+            s.total = prices.reduce((a, p) => a + p, 0);
+        } else {
+            s.price = prices[0];
+        }
+        s.client = client; s.city = city; s.source = source; s.saleDate = saleDate;
+        const serials = s.devices ? s.devices.map(d => d.serial) : [s.serial];
+        const totalPrice = s.total || s.price;
+        const trans = state.transactions.find(t => t.type === 'income' && t.category === 'Venta' && serials.some(ser => t.description.includes(ser)));
+        if (trans) { trans.amount = totalPrice; trans.date = saleDate; trans.description = `Venta ${serials.length} equipo(s) — ${serials.join(', ')} — Cliente: ${client}`; }
         saveState(); closeModal('saleModal'); renderSales(); updateDashboard();
         return;
     }
@@ -121,30 +129,38 @@ if (saleForm) saleForm.onsubmit = function (e) {
         return;
     }
 
-    let allOk = true;
-    rows.forEach(row => {
+    const devices = [];
+    for (const row of rows) {
         const selEl = row.querySelector('[id^="sale-serial-"]');
         const priceEl = row.querySelector('[id^="sale-price-"]');
-        if (!selEl || !priceEl) return;
+        if (!selEl || !priceEl) continue;
         const serial = selEl.value;
         const price = parseFloat(priceEl.value);
-        if (!serial || !price || price <= 0) { allOk = false; return; }
+        if (!serial || !price || price <= 0) { alert('Precio inválido'); return; }
         const item = state.inventory.find(i => i.serial === serial);
         if (!item || item.status !== 'Disponible') {
             alert(`El equipo ${serial} ya no está disponible.`);
-            allOk = false; return;
+            return;
         }
         item.status = 'Vendido';
-        state.sales.push({ serial, model: item.model, cost: item.cost, price, client, city, source, saleDate, createdAt: new Date().toISOString() });
-        state.transactions.push({
-            id: Date.now() + Math.random(),
-            type: 'income', category: 'Venta',
-            description: `Venta Equipo — ${serial} — Cliente: ${client}`,
-            amount: price, date: saleDate, createdAt: new Date().toISOString()
-        });
+        devices.push({ serial, model: item.model, cost: item.cost, price });
+    }
+    if (devices.length === 0) return;
+
+    const totalPrice = devices.reduce((sum, d) => sum + d.price, 0);
+    const saleId = Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+    state.sales.push({
+        id: saleId, devices, total: totalPrice,
+        client, city, source, saleDate,
+        createdAt: new Date().toISOString()
+    });
+    state.transactions.push({
+        id: Date.now() + Math.random(),
+        type: 'income', category: 'Venta',
+        description: `Venta ${devices.length} equipo(s) — ${devices.map(d => d.serial).join(', ')} — Cliente: ${client}`,
+        amount: totalPrice, date: saleDate, createdAt: new Date().toISOString()
     });
 
-    if (!allOk) return;
     saveState(); closeModal('saleModal'); renderSales(); updateDashboard();
 };
 
@@ -160,19 +176,74 @@ function renderSales() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
+    function getSaleSerials(s) {
+        if (s.devices) return s.devices.map(d => d.serial);
+        return [s.serial];
+    }
+
     let filtered = state.sales.filter(s => {
+        const serials = getSaleSerials(s);
         const matchSearch =
             (s.client || '').toLowerCase().includes(search) ||
-            (s.serial || '').toLowerCase().includes(search) ||
+            serials.some(ser => ser.toLowerCase().includes(search)) ||
             (s.city || '').toLowerCase().includes(search);
-
         let matchDate = true;
         if (saleDateRange) {
             const d = parseDateLocal(s.saleDate);
             matchDate = d && d >= saleDateRange.from && d <= saleDateRange.to;
         }
-
         return matchSearch && matchDate;
+    });
+
+    // Orden descendente: último creado primero
+    filtered.sort((a, b) => {
+        const da = new Date(a.createdAt || a.saleDate).getTime() || 0;
+        const db = new Date(b.createdAt || b.saleDate).getTime() || 0;
+        return db - da;
+    });
+
+    filtered.forEach((s) => {
+        if (!s) return;
+        const index = state.sales.indexOf(s);
+        const priceNum = getSaleTotal(s);
+        const costNum = getSaleCost(s);
+        const utility = priceNum - costNum;
+        const utilityColor = utility < 0 ? 'var(--vibrant-red)' : '#047481';
+        const margin = priceNum > 0 ? ((utility / priceNum) * 100).toFixed(0) : 0;
+
+        const serials = getSaleSerials(s);
+        const firstSerial = serials[0];
+        const modelHtml = s.devices
+            ? s.devices.map(d => `${escapeHtml(d.model)} <small style="font-size:0.7rem;display:block;">${escapeHtml(d.serial)}</small>`).join('<br>')
+            : `${escapeHtml(s.model)} <br><small>${escapeHtml(s.serial)}</small>`;
+
+        const eClient = escapeHtml(s.client);
+        const eSource = escapeHtml(s.source);
+
+        const retBtn = s.returned
+            ? `<span style="font-size:0.65rem; color:var(--vibrant-red); font-weight:800; background:rgba(238,66,78,0.1); padding:0.2rem 0.4rem; border-radius:100px;">DEVUELTO</span>`
+            : `<button onclick="openReturnModal('${firstSerial}')" title="Registrar devolución" style="background:none; border:none; cursor:pointer; color:var(--vibrant-red); display:flex; align-items:center; padding:0.25rem;">
+                 <i data-lucide="rotate-ccw" style="width:16px;height:16px;"></i>
+               </button>`;
+
+        tbody.innerHTML += `
+            <tr>
+                <td data-label="Fecha">${escapeHtml(s.saleDate)}</td>
+                <td data-label="Modelo">${modelHtml}</td>
+                <td data-label="Cliente">${eClient}</td>
+                <td data-label="Precio"><strong>$${priceNum.toLocaleString()}</strong></td>
+                <td data-label="Utilidad" style="color: ${utilityColor}; font-weight: 700;">
+                    $${utility.toLocaleString()} <br><small style="color:var(--text-gray)">${margin}%</small>
+                </td>
+                <td data-label="Canal"><span class="badge" style="background:#E2E8F0; color:var(--deep-blue)">${eSource}</span></td>
+                <td data-label="Acciones">
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <button onclick="editSale('${firstSerial}')" style="background:none; border:none; color:var(--soft-blue); cursor:pointer;"><i data-lucide="pencil" size="18"></i></button>
+                        <button onclick="deleteSale('${firstSerial}')" style="background:none; border:none; color:var(--vibrant-red); cursor:pointer;"><i data-lucide="trash-2" size="18"></i></button>
+                        ${retBtn}
+                    </div>
+                </td>
+            </tr>`;
     });
 
     // Orden descendente: último creado primero
@@ -237,7 +308,10 @@ function renderSales() {
 }
 
 function editSale(serial) {
-    const index = state.sales.findIndex(s => s.serial === serial);
+    const index = state.sales.findIndex(s => {
+        if (s.devices) return s.devices.some(d => d.serial === serial);
+        return s.serial === serial;
+    });
     if (index === -1) return;
     editingSaleIndex = index;
     const s = state.sales[index];
@@ -251,27 +325,30 @@ function editSale(serial) {
     const deviceList = document.getElementById('saleDeviceList');
     if (deviceList) deviceList.innerHTML = '';
     saleDeviceCount = 0;
-    saleDeviceCount++;
-    const id = saleDeviceCount;
 
-    const eModel = escapeHtml(s.model);
-    const eSerial = escapeHtml(s.serial);
-    const row = document.createElement('div');
-    row.id = `sale-device-${id}`;
-    row.style.cssText = 'display:grid;grid-template-columns:1fr auto;gap:0.5rem;align-items:end;background:var(--light-gray);padding:0.75rem;border-radius:10px;';
-    row.innerHTML = `
+    const devices = s.devices || [{ serial: s.serial, model: s.model, price: s.price }];
+    devices.forEach((d, i) => {
+        saleDeviceCount++;
+        const id = saleDeviceCount;
+        const eModel = escapeHtml(d.model);
+        const eSerial = escapeHtml(d.serial);
+        const row = document.createElement('div');
+        row.id = `sale-device-${id}`;
+        row.style.cssText = 'display:grid;grid-template-columns:1fr auto;gap:0.5rem;align-items:end;background:var(--light-gray);padding:0.75rem;border-radius:10px;';
+        row.innerHTML = `
         <div class="form-group" style="margin:0;">
-            <label style="font-size:0.75rem;margin-bottom:0.25rem;display:block;">Dispositivo — ${eModel}</label>
+            <label style="font-size:0.75rem;margin-bottom:0.25rem;display:block;">Dispositivo ${i+1} — ${eModel}</label>
             <input type="text" value="${eSerial} — ${eModel}" readonly
                 style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--light-gray);color:var(--text-gray);cursor:not-allowed;">
             <input type="hidden" id="sale-serial-${id}" value="${eSerial}">
         </div>
         <div class="form-group" style="margin:0;">
             <label style="font-size:0.75rem;margin-bottom:0.25rem;display:block;">Precio ($)</label>
-            <input type="number" id="sale-price-${id}" value="${s.price}" min="0" oninput="updateSaleTotal()" required
+            <input type="number" id="sale-price-${id}" value="${d.price}" min="0" oninput="updateSaleTotal()" required
                 style="width:120px;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;">
         </div>`;
-    deviceList.appendChild(row);
+        deviceList.appendChild(row);
+    });
     updateSaleTotal();
     openModal('saleModal');
     lucide.createIcons();
@@ -279,20 +356,26 @@ function editSale(serial) {
 
 function deleteSale(serial) {
     if (confirm('¿Eliminar esta venta? Se ajustará el inventario y las finanzas automáticamente.')) {
-        const index = state.sales.findIndex(s => s.serial === serial);
+        const index = state.sales.findIndex(s => {
+            if (s.devices) return s.devices.some(d => d.serial === serial);
+            return s.serial === serial;
+        });
         if (index === -1) return;
         const s = state.sales[index];
+        const serials = s.devices ? s.devices.map(d => d.serial) : [s.serial];
 
-        // 1. Revertir inventario
-        const item = state.inventory.find(i => i.serial === s.serial);
-        if (item) {
-            item.status = 'Disponible';
-            if (item.returnNote) delete item.returnNote;
-        }
+        // 1. Revertir inventario de todos los dispositivos
+        serials.forEach(ser => {
+            const item = state.inventory.find(i => i.serial === ser);
+            if (item) {
+                item.status = 'Disponible';
+                if (item.returnNote) delete item.returnNote;
+            }
+        });
 
         // 2. Eliminar transacción financiera de la venta
         state.transactions = state.transactions.filter(t => 
-            !(t.type === 'income' && t.description.includes(serial) && t.category === 'Venta')
+            !(t.type === 'income' && t.category === 'Venta' && serials.some(ser => t.description.includes(ser)))
         );
 
         // 3. Si fue devuelta, eliminar el registro de devolución y su transacción
@@ -300,7 +383,7 @@ function deleteSale(serial) {
             const retId = s.returnId;
             state.returns = (state.returns || []).filter(r => r.id !== retId);
             state.transactions = state.transactions.filter(t => 
-                !(t.category === 'Devolución' && t.description.includes(serial))
+                !(t.category === 'Devolución' && serials.some(ser => t.description.includes(ser)))
             );
         }
 
@@ -319,7 +402,9 @@ if (returnForm) returnForm.onsubmit = async (e) => {
     if (currentReturnSaleIndex === -1) return;
 
     const s = state.sales[currentReturnSaleIndex];
-    const item = state.inventory.find(i => i.serial === s.serial);
+    const retSerial = currentReturnSerial || s.serial;
+    const device = s.devices ? s.devices.find(d => d.serial === retSerial) : s;
+    const item = state.inventory.find(i => i.serial === retSerial);
     const cost = item ? (item.cost || 0) : 0;
     const action = document.getElementById('m_ret_action').value;
     const condition = document.getElementById('m_ret_condition').value;
@@ -327,13 +412,13 @@ if (returnForm) returnForm.onsubmit = async (e) => {
     // Crear registro de devolución
     const ret = {
         id: 'RET-' + Date.now(),
-        serial: s.serial,
-        model: s.model || '',
+        serial: retSerial,
+        model: device.model || '',
         client: s.client || '',
         city: s.city || '',
         saleDate: s.saleDate || '',
         returnDate: document.getElementById('m_ret_date').value,
-        salePrice: s.price || 0,
+        salePrice: device.price || 0,
         cost: cost,
         reason: document.getElementById('m_ret_reason').value,
         condition: condition,
@@ -370,8 +455,8 @@ if (returnForm) returnForm.onsubmit = async (e) => {
     state.transactions.push({
         type: 'expense',
         category: 'Devolución',
-        description: `Devolución ${ret.id} — ${escapeHtml(s.serial)} — Cliente: ${escapeHtml(s.client || 'N/A')}`,
-        amount: s.price || 0,
+        description: `Devolución ${ret.id} — ${escapeHtml(retSerial)} — Cliente: ${escapeHtml(s.client || 'N/A')}`,
+        amount: device.price || 0,
         date: ret.returnDate,
         createdAt: new Date().toISOString()
     });

@@ -1,3 +1,12 @@
+function getSaleTotal(s) {
+    if (s.total) return parseFloat(s.total) || 0;
+    if (s.price) return parseFloat(s.price) || 0;
+    if (s.devices && Array.isArray(s.devices)) {
+        return s.devices.reduce((a, d) => a + (parseFloat(d.price) || 0), 0);
+    }
+    return 0;
+}
+
 function updateDashboard() {
     const now = new Date();
     const curM = now.getMonth();
@@ -5,15 +14,6 @@ function updateDashboard() {
     
     const prevM = curM === 0 ? 11 : curM - 1;
     const prevY = curM === 0 ? curY - 1 : curY;
-
-    const getSaleTotal = (s) => {
-        if (s.total) return parseFloat(s.total) || 0;
-        if (s.price) return parseFloat(s.price) || 0;
-        if (s.devices && Array.isArray(s.devices)) {
-            return s.devices.reduce((a, d) => a + (parseFloat(d.price) || 0), 0);
-        }
-        return 0;
-    };
 
     const filterCurM = (dStr) => { const d = parseDateLocal(dStr); return d && d.getMonth() === curM && d.getFullYear() === curY; };
     const filterPrevM = (dStr) => { const d = parseDateLocal(dStr); return d && d.getMonth() === prevM && d.getFullYear() === prevY; };
@@ -66,7 +66,10 @@ function updateDashboard() {
         let totalDays = 0;
         let count = 0;
         soldItems.forEach(i => {
-            const s = state.sales.find(sale => sale.serial === i.serial);
+            const s = state.sales.find(sale => {
+                if (sale.devices) return sale.devices.some(d => d.serial === i.serial);
+                return sale.serial === i.serial;
+            });
             if (s) {
                 const start = parseDateLocal(i.entryDate);
                 const end = parseDateLocal(s.saleDate);
