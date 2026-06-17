@@ -96,10 +96,13 @@ function renderStockBars() {
     if (!container) return;
     container.innerHTML = '';
 
+    const thresholds = state.settings?.thresholds || {};
     const uniqueModels = Array.from(new Set([
-        ...Object.keys(state.settings.thresholds),
+        ...Object.keys(thresholds),
         ...(state.inventory || []).map(i => i.model)
     ])).filter(Boolean);
+
+    console.log('Modelos encontrados:', uniqueModels);
 
     uniqueModels.forEach(model => {
         const threshold = state.settings.thresholds[model] !== undefined ? state.settings.thresholds[model] : 5;
@@ -146,13 +149,8 @@ function renderStockBars() {
             </div>`;
     });
 
-    const uniqueModels2 = Array.from(new Set([
-        ...Object.keys(state.settings.thresholds),
-        ...(state.inventory || []).map(i => i.model)
-    ])).filter(Boolean);
-
-    const bajosCount = uniqueModels2.filter(m => {
-        const threshold = state.settings.thresholds[m] !== undefined ? state.settings.thresholds[m] : 5;
+    const bajosCount = uniqueModels.filter(m => {
+        const threshold = thresholds[m] !== undefined ? thresholds[m] : 5;
         const count = state.inventory.filter(
             i => i && i.model === m && i.status === 'Disponible'
         ).length;
