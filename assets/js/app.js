@@ -428,7 +428,7 @@ function createSearchableSelect(config) {
         }
     }
 
-    input.addEventListener('focus', () => { renderOptions(input.value); dropdown.classList.add('open'); });
+    input.addEventListener('focus', () => { renderOptions(''); dropdown.classList.add('open'); });
     input.addEventListener('input', () => { hidden.value = ''; renderOptions(input.value); dropdown.classList.add('open'); });
 
     if (wrapper._outsideClickHandler) {
