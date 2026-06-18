@@ -298,8 +298,8 @@ function renderSales() {
         const serials = getSaleSerials(s);
         const firstSerial = serials[0];
         const modelHtml = s.devices
-            ? s.devices.map(d => `<div style="display:flex;flex-direction:column;gap:0.1rem;${s.devices.indexOf(d) > 0 ? 'margin-top:0.5rem;padding-top:0.5rem;border-top:1px dashed var(--border);' : ''}"><strong style="font-size:0.82rem;">${escapeHtml(d.model)}</strong><small style="font-size:0.7rem;color:var(--text-gray);font-family:monospace;">${escapeHtml(d.serial)}</small></div>`).join('')
-            : `<div style="display:flex;flex-direction:column;gap:0.1rem;"><strong style="font-size:0.82rem;">${escapeHtml(s.model)}</strong><small style="font-size:0.7rem;color:var(--text-gray);font-family:monospace;">${escapeHtml(s.serial)}</small></div>`;
+            ? `<div style="display:flex;flex-direction:column;gap:0.35rem;">${s.devices.map(d => `<div style="display:flex;flex-direction:column;gap:0.05rem;${s.devices.indexOf(d) > 0 ? 'padding-top:0.35rem;border-top:1px dashed var(--border);' : ''}"><strong style="font-size:0.82rem;">${escapeHtml(d.model)}</strong><small style="font-size:0.7rem;color:var(--text-gray);font-family:monospace;">${escapeHtml(d.serial)}</small></div>`).join('')}</div>`
+            : `<div style="display:flex;flex-direction:column;gap:0.05rem;"><strong style="font-size:0.82rem;">${escapeHtml(s.model)}</strong><small style="font-size:0.7rem;color:var(--text-gray);font-family:monospace;">${escapeHtml(s.serial)}</small></div>`;
 
         const eClient = escapeHtml(s.client);
         const eSource = escapeHtml(s.source);
