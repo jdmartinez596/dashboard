@@ -5,6 +5,7 @@ let state = {
     sales: [],
     transactions: [],
     returns: [],
+    clients: [],
     settings: {
         categories: ['Marketing', 'Logística', 'Soporte', 'Gasto Operativo', 'Inversión'],
         sources: ['WhatsApp', 'Instagram', 'Facebook', 'Referido', 'Tienda Física', 'Página Web', 'Mercado Libre', 'Otro'],
@@ -161,6 +162,7 @@ async function loadState() {
     if (!state.sales)        state.sales        = [];
     if (!state.transactions) state.transactions = [];
     if (!state.returns)      state.returns      = [];
+    if (!state.clients)      state.clients      = [];
     if (!state.settings)     state.settings     = getDefaultSettings();
 
     const now = new Date();
@@ -207,6 +209,7 @@ function refreshUI() {
     if (typeof renderAccounting === 'function') renderAccounting();
     if (typeof renderReturns === 'function') renderReturns();
     if (typeof renderSettings === 'function') renderSettings();
+    if (typeof renderClients === 'function') renderClients();
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -265,6 +268,7 @@ function showView(viewId) {
     if (viewId === 'finance') renderFinance();
     if (viewId === 'accounting') renderAccounting();
     if (viewId === 'returns') renderReturns();
+    if (viewId === 'clients') renderClients();
     if (viewId === 'settings') renderSettings();
     lucide.createIcons();
 }
@@ -276,6 +280,7 @@ function openModal(id) {
     el.style.display = 'flex';
     if (id === 'saleModal') {
         populateSources();
+        populateCities();
         if (editingSaleIndex === -1) {
             const deviceList = document.getElementById('saleDeviceList');
             if (deviceList) deviceList.innerHTML = '';
@@ -475,17 +480,19 @@ function populateSaleSerials() {
 }
 
 // ── Charts ────────────────────────────────────────────────────
-let salesChart, categoryChartInstance, sourceChart;
+let salesChart, categoryChartInstance, sourceChart, citySalesChart;
 
 function initCharts() {
     // Destruir instancias previas para evitar fugas de memoria
     if (salesChart) { salesChart.destroy(); salesChart = null; }
     if (categoryChartInstance) { categoryChartInstance.destroy(); categoryChartInstance = null; }
     if (sourceChart) { sourceChart.destroy(); sourceChart = null; }
+    if (citySalesChart) { citySalesChart.destroy(); citySalesChart = null; }
 
     const salesCanvas = document.getElementById('salesTrendChart');
     const catCanvas = document.getElementById('categoryChart');
     const sourceCanvas = document.getElementById('sourceChart');
+    const cityCanvas = document.getElementById('citySalesChart');
     if (!salesCanvas || !catCanvas || !sourceCanvas) return;
 
     const ctxSales = salesCanvas.getContext('2d');
@@ -517,6 +524,23 @@ function initCharts() {
         data: { labels: [], datasets: [{ data: [], backgroundColor: ['#121E6C', '#EE424E', '#919FDC', '#047481', '#647481', '#E2E8F0'], borderWidth: 0 }] },
         options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10, weight: '600' }, padding: 15 } } } }
     });
+
+    if (cityCanvas) {
+        const ctxCity = cityCanvas.getContext('2d');
+        citySalesChart = new Chart(ctxCity, {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Ventas ($)', data: [], backgroundColor: '#121E6C', borderRadius: 6 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, resizeDelay: 200,
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 }, callback: function (v) { return '$' + v.toLocaleString(); } } },
+                    y: { grid: { display: false }, ticks: { font: { size: 9 } } }
+                },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (ctx) { return '$' + ctx.parsed.x.toLocaleString(); } } } }
+            }
+        });
+    }
 }
 
 function updateChartsData() {
@@ -566,6 +590,27 @@ function updateChartsData() {
     sourceChart.data.labels = Object.keys(sources);
     sourceChart.data.datasets[0].data = Object.values(sources);
     sourceChart.update();
+
+    // City sales chart
+    if (citySalesChart) {
+        const cityData = {};
+        state.sales.forEach(s => {
+            const city = s.city || 'Sin ciudad';
+            cityData[city] = (cityData[city] || 0) + getSaleTotal(s);
+        });
+        const sortedCities = Object.entries(cityData).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        const emptyEl = document.getElementById('citySalesEmpty');
+        if (sortedCities.length === 0) {
+            if (emptyEl) emptyEl.style.display = 'block';
+            citySalesChart.data.labels = [];
+            citySalesChart.data.datasets[0].data = [];
+        } else {
+            if (emptyEl) emptyEl.style.display = 'none';
+            citySalesChart.data.labels = sortedCities.map(([city]) => city);
+            citySalesChart.data.datasets[0].data = sortedCities.map(([, total]) => total);
+        }
+        citySalesChart.update();
+    }
 }
 
 // initLaserScanner(), handleLaserScan(), toggleLaserBar(), hideLaserBar()

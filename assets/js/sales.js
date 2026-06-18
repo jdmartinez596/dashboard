@@ -1,3 +1,83 @@
+// ── Colombian Cities ──────────────────────────────
+const COLOMBIAN_CITIES = {
+    'Amazonas': ['Leticia', 'Puerto Nariño'],
+    'Antioquia': ['Medellín', 'Bello', 'Itagüí', 'Envigado', 'Rionegro', 'Apartadó', 'Turbo', 'La Estrella', 'Sabaneta', 'Caldas', 'Copacabana', 'Girardota', 'Barbosa', 'San Pedro de los Milagros', 'Santafe de Antioquia', 'Marinilla', 'El Carmen de Viboral', 'La Ceja', 'Jardín', 'Andes', 'Támesis', 'Jericó', 'Yarumal', 'Amalfi', 'Segovia', 'Remedios', 'Caucasia', 'Carepa', 'Chigorodó', 'Nechí', 'Zaragoza', 'Puerto Berrío', 'Puerto Triunfo', 'San Rafael', 'San Carlos', 'Guarne', 'El Peñol', 'Guatapé'],
+    'Arauca': ['Arauca', 'Arauquita', 'Saravena', 'Tame', 'Fortul'],
+    'Atlántico': ['Barranquilla', 'Soledad', 'Malambo', 'Puerto Colombia', 'Baranoa', 'Sabanagrande', 'Santo Tomás', 'Galapa', 'Tubará', 'Juan de Acosta', 'Piojó', 'Usiacurí', 'Luruaco', 'Repelón', 'Manatí', 'Candelaria', 'Campo de la Cruz', 'Suán', 'Palmar de Varela', 'Polonuevo', 'Ponedera'],
+    'Bogotá D.C.': ['Bogotá D.C.'],
+    'Bolívar': ['Cartagena de Indias', 'Magangué', 'Turbaco', 'Arjona', 'El Carmen de Bolívar', 'Mompós', 'San Pablo', 'Santa Rosa', 'Villanueva', 'María la Baja', 'Mahates', 'San Juan Nepomuceno', 'Calamar', 'Clemencia', 'Santa Catalina', 'San Estanislao', 'Soplaviento', 'Talaigua Nuevo', 'Córdoba', 'Margarita', 'Montecristo', 'Río Viejo', 'Regidor', 'El Peñón', 'Hatillo de Loba', 'San Martín de Loba', 'Altos del Rosario', 'Barranco de Loba', 'Pinillos', 'Arenal', 'Morales', 'Simití', 'Santa Rosa del Sur', 'San Jacinto del Cauca', 'Tiquisio', 'Achí', 'Montecristo', 'Tiquisio'],
+    'Boyacá': ['Tunja', 'Duitama', 'Sogamoso', 'Chiquinquirá', 'Paipa', 'Samacá', 'Villa de Leyva', 'Ramiriquí', 'Tenza', 'Garagoa', 'Miraflores', 'Chivatá', 'Oicatá', 'Tuta', 'Siachoque', 'Toca', 'Zetaquirá', 'Ráquira', 'Sutamarchán', 'Sáchica', 'Tinjacá', 'Cómbita', 'Motavita', 'Cucaita', 'Ventaquemada', 'Turmequé', 'Úmbita', 'Tibiritá', 'La Capilla', 'Pachavita', 'Guayatá', 'Chocontá', 'Machetá', 'Manta', 'Sesquilé', 'Suesca', 'Tibirita', 'Villapinzón', 'Nemocón', 'Cogua', 'Gachancipá', 'Tocancipá', 'Zipaquirá', 'Sopó', 'Cajicá', 'Tabio', 'Tenjo', 'Subachoque', 'El Rosal', 'San Francisco', 'Bojacá', 'Zipacón', 'Madrid', 'Mosquera', 'Funza', 'Soacha'],
+    'Caldas': ['Manizales', 'Chinchiná', 'Palestina', 'Neira', 'Villamaría', 'Anserma', 'Riosucio', 'Supía', 'Marmato', 'Salamina', 'Pácora', 'Aguadas', 'Aranzazu', 'Filadelfia', 'La Merced', 'Manzanares', 'Marulanda', 'Pensilvania', 'Samana', 'Victoria', 'Norcasia', 'La Dorada'],
+    'Caquetá': ['Florencia', 'Cartagena del Chairá', 'San Vicente del Caguán', 'Puerto Rico', 'La Montañita', 'El Doncello', 'El Paujil', 'Albania', 'Curillo', 'Valparaíso', 'Solita', 'San José del Fragua', 'Belén de los Andaquíes', 'Milan'],
+    'Casanare': ['Yopal', 'Villanueva', 'Paz de Ariporo', 'Trinidad', 'San Luis de Palenque', 'Maní', 'Tauramena', 'Monterrey', 'Sabanalarga', 'Nunchía', 'La Chaparrera', 'Aguazul', 'Chámeza', 'Recetor', 'Pore', 'Hato Corozal', 'Orocué'],
+    'Cauca': ['Popayán', 'Santander de Quilichao', 'Puerto Tejada', 'Miranda', 'Piendamó', 'Cajibío', 'El Tambo', 'Timbío', 'Rosas', 'La Sierra', 'Almaguer', 'Argelia', 'Balboa', 'Bolívar', 'Buenos Aires', 'Caloto', 'Corinto', 'El Bordo', 'Guachené', 'Guapi', 'Inzá', 'Jambaló', 'La Vega', 'López', 'Mercaderes', 'Morales', 'Padilla', 'Páez', 'Patía', 'Piamonte', 'Puerto López', 'Puerto Rico', 'San Sebastián', 'Santa Rosa', 'Silvia', 'Sotará', 'Suárez', 'Sucre', 'Timbiquí', 'Toribío', 'Totoró', 'Villa Rica'],
+    'Cesar': ['Valledupar', 'Aguachica', 'Codazzi', 'Bosconia', 'El Copey', 'San Diego', 'La Paz', 'San Alberto', 'San Martín', 'Río de Oro', 'Gamarra', 'Chimichagua', 'Chiriguaná', 'Astarrea', 'Becerril', 'La Jagua de Ibirico', 'Pailitas', 'Pelaya', 'Tamalameque', 'Curumaní', 'Manaure', 'La Gloria'],
+    'Chocó': ['Quibdó', 'Istmina', 'Tadó', 'Condoto', 'Nóvita', 'Bagadó', 'Lloró', 'Atrato', 'El Carmen de Atrato', 'San José del Palmar', 'Cértegui', 'Unión Panamericana', 'Sipí', 'Medio Atrato', 'Bojayá', 'Vigía del Fuerte', 'Murindó', 'Unguía', 'Juradó', 'Bahía Solano', 'Nuquí', 'Alto Baudó', 'Bajo Baudó', 'El Litoral del San Juan', 'Riosucio', 'Carmen del Darién', 'Acandí'],
+    'Córdoba': ['Montería', 'Lorica', 'Sahagún', 'Cereté', 'Planeta Rica', 'Ciénaga de Oro', 'San Carlos', 'Chinú', 'San Antero', 'San Bernardo del Viento', 'San Pelayo', 'Cotorra', 'Momil', 'Purísima', 'Santa Cruz de Lorica', 'San Andrés de Sotavento', 'Tuchín', 'Tierralta', 'Valencia', 'Puerto Libertador', 'Montelíbano', 'La Apartada', 'Buenavista', 'Ayapel', 'Pueblo Nuevo', 'Canalete', 'Los Córdobas', 'Moñitos', 'San José de Uré'],
+    'Cundinamarca': ['Bogotá D.C.', 'Soacha', 'Fusagasugá', 'Zipaquirá', 'Facatativá', 'Chía', 'Madrid', 'Mosquera', 'Funza', 'Cajicá', 'Tabio', 'Tenjo', 'Subachoque', 'El Rosal', 'San Francisco', 'Bojacá', 'Zipacón', 'La Calera', 'Sopó', 'Tocancipá', 'Gachancipá', 'Nemocón', 'Cogua', 'Villapinzón', 'Suesca', 'Sesquilé', 'Chocontá', 'Machetá', 'Manta', 'Tibirita', 'Guatavita', 'Guasca', 'La Candelaria', 'Junín', 'Gachalá', 'Medina', 'Paratebueno', 'Fómeque', 'Choachí', 'Une', 'Chipaque', 'Cáqueza', 'Fosca', 'Quetame', 'Ubaque', 'Gutiérrez', 'Pasca', 'San Bernardo', 'Arbeláez', 'Venecia', 'Cabrera', 'Granada', 'Silvania', 'Sibaté', 'Nariño', 'Apulo', 'Tocaima', 'Agua de Dios', 'Nilo', 'Ricaurte', 'Girardot', 'Viotá', 'El Colegio', 'San Antonio del Tequendama', 'Tena', 'La Mesa', 'Anolaima', 'Bituima', 'Cachipay', 'Quipile', 'San Juan de Rioseco', 'Pulí', 'Beltrán', 'Jerusalén', 'Guayabal de Síquima', 'Vianí', 'Albán', 'Sasaima', 'Villa Gómez', 'La Vega', 'Nocaima', 'Villeta', 'Útica', 'Quebradanegra', 'Guaduas', 'Puerto Salgar', 'Caparrapí', 'Yacopí', 'Pacho', 'San Cayetano', 'Cucunubá', 'Tausa', 'Sutatausa'],
+    'Guainía': ['Inírida', 'Puerto Colombia', 'La Guadalupe', 'Cacahual', 'Pana Pana', 'Morichal Nuevo', 'San Felipe', 'Barranco Minas'],
+    'Guaviare': ['San José del Guaviare', 'Calamar', 'El Retorno', 'Miraflores', 'Puerto Concordia'],
+    'Huila': ['Neiva', 'Pitalito', 'Garzón', 'La Plata', 'Campoalegre', 'Rivera', 'Palermo', 'Santa María', 'San Agustín', 'Isnos', 'Saladoblanco', 'Oporapa', 'Elías', 'Timaná', 'Suaza', 'Guadalupe', 'Altamira', 'Gigante', 'Agrado', 'Tarqui', 'Paicol', 'Tesalia', 'Nátaga', 'La Argentina', 'Hobo', 'Yaguará', 'Íquira', 'Teruel', 'Baraya', 'Tello', 'Villavieja', 'Aipe', 'Colombia'],
+    'La Guajira': ['Riohacha', 'Maicao', 'Uribia', 'Manaure', 'Albania', 'Dibulla', 'Hatonuevo', 'Barrancas', 'Fonseca', 'Distracción', 'El Molino', 'Villanueva', 'Urumita', 'La Jagua del Pilar', 'San Juan del Cesar'],
+    'Magdalena': ['Santa Marta', 'Ciénaga', 'Fundación', 'El Banco', 'Plato', 'Aracataca', 'Algarrobo', 'Cerro de San Antonio', 'Concordia', 'El Piñón', 'El Retén', 'Guamal', 'Nueva Granada', 'Pedraza', 'Pivijay', 'Puebloviejo', 'Remolino', 'Sabanas de San Ángel', 'Salamina', 'San Sebastián de Buenavista', 'San Zenón', 'Santa Ana', 'Santa Bárbara de Pinto', 'Sitionuevo', 'Tenerife', 'Zapayán', 'Zona Bananera'],
+    'Meta': ['Villavicencio', 'Acacías', 'Puerto López', 'Granada', 'Restrepo', 'Cumaral', 'San Martín', 'Puerto Gaitán', 'Puerto Lleras', 'Mesetas', 'La Macarena', 'El Dorado', 'San Juan de Arama', 'Lejanías', 'Castilla La Nueva', 'San Carlos de Guaroa', 'Barranca de Upía', 'Fuente de Oro', 'El Calvario', 'Cubarral', 'Cabuyaro', 'Mapiripán', 'La Uribe', 'Puerto Concordia', 'Vista Hermosa'],
+    'Nariño': ['Pasto', 'Tumaco', 'Ipiales', 'Barbacoas', 'La Unión', 'Túquerres', 'El Charco', 'Ricaurte', 'Cumbal', 'Guachucal', 'Aldana', 'Cuaspud', 'Contadero', 'Gualmatán', 'Puerres', 'Potosí', 'Funes', 'Iles', 'Imués', 'Ospina', 'Tangua', 'Yacuanquer', 'Consacá', 'Sandoná', 'Nariño', 'Ancuya', 'Linares', 'Sotomayor', 'El Tambo', 'La Florida', 'Chachagüí', 'Buesaco', 'Pasto', 'San Lorenzo', 'Taminango', 'El Tablón de Gómez', 'San José de Albán', 'Arboleda', 'Belén', 'Colón', 'San Pedro de Cartago', 'Santiago', 'La Cruz', 'La Unión', 'Roldanillo', 'Berruecos', 'Mallama', 'Cumbitara', 'El Rosario', 'Leiva', 'Policarpa', 'Providencia', 'Santa Cruz', 'Sapuyes', 'Túquerres', 'El Peñol'],
+    'Norte de Santander': ['Cúcuta', 'Ocaña', 'Pamplona', 'Los Patios', 'Villa del Rosario', 'San José de Cúcuta', 'El Zulia', 'San Cayetano', 'Santiago', 'Gramalote', 'Lourdes', 'Salazar', 'Arboledas', 'Cáchira', 'La Esperanza', 'Chinácota', 'Ragonvalia', 'Herrán', 'Toledo', 'Labateca', 'Bochalema', 'Durania', 'Puerto Santander', 'Tibú', 'El Tarra', 'Teorama', 'Convención', 'San Calixto', 'Hacarí', 'Ábrego', 'La Playa de Belén', 'Bucarasica', 'Sardinata'],
+    'Putumayo': ['Mocoa', 'Puerto Asís', 'Orito', 'Valle del Guamuez', 'San Miguel', 'Puerto Guzmán', 'Puerto Leguízamo', 'Sibundoy', 'Colón', 'Santiago', 'Villagarzón'],
+    'Quindío': ['Armenia', 'Calarcá', 'Montenegro', 'Quimbaya', 'La Tebaida', 'Circasia', 'Filandia', 'Salento', 'Buenavista', 'Pijao', 'Génova', 'Córdoba'],
+    'Risaralda': ['Pereira', 'Dosquebradas', 'La Virginia', 'Santa Rosa de Cabal', 'Marsella', 'Belén de Umbría', 'Apía', 'Santuario', 'Balboa', 'La Celia', 'Guática', 'Quinchía', 'Pueblo Rico', 'Mistrató'],
+    'San Andrés y Providencia': ['San Andrés', 'Providencia'],
+    'Santander': ['Bucaramanga', 'Floridablanca', 'Girón', 'Piedecuesta', 'Barrancabermeja', 'San Gil', 'Socorro', 'San Vicente de Chucurí', 'Sabana de Torres', 'Puente Nacional', 'Barbosa', 'Vélez', 'Landázuri', 'Cimitarra', 'Puerto Parra', 'El Playón', 'Rionegro', 'Matanza', 'Suratá', 'California', 'Charta', 'Tona', 'Vetas', 'Málaga', 'Concepción', 'San Andrés', 'Guaca', 'San José de Miranda', 'Enciso', 'Capitanejo', 'Macaravita', 'San Miguel', 'Carcasí', 'Cerrito', 'Santa Bárbara', 'Aratoca', 'Curití', 'Villanueva', 'Barichara', 'Cabrera', 'Galán', 'Hato', 'Palmar', 'Palmas del Socorro', 'Simacota', 'Confines', 'Ocamonte', 'Charalá', 'Coromoro', 'Betulia', 'Zapatoca', 'Los Santos', 'San Joaquín', 'Jordán', 'Guadalupe', 'Santa Helena del Opón', 'Contratación', 'Aguachica', 'San Vicente de Chucurí', 'El Carmen de Chucurí', 'Simití'],
+    'Sucre': ['Sincelejo', 'Corozal', 'San Marcos', 'San Benito Abad', 'San Onofre', 'Ovejas', 'Tolú', 'Sampués', 'Chalán', 'Colosó', 'Morroa', 'Los Palmitos', 'Palmito', 'San Antonio de Palmito', 'San Juan de Betulia', 'San Pedro', 'La Unión', 'Caimito', 'Guaranda', 'Majagual', 'Sucre', 'Buenavista', 'Galeras'],
+    'Tolima': ['Ibagué', 'Espinal', 'Líbano', 'Honda', 'Mariquita', 'Fresno', 'Méndez', 'San Luis', 'Rovira', 'Valle de San Juan', 'San Antonio', 'Alvarado', 'Anzoátegui', 'Armero', 'Casabianca', 'Chaparral', 'Coello', 'Coyaima', 'Cunday', 'Dolores', 'Falan', 'Flandes', 'Guamo', 'Herveo', 'Icononzo', 'Lérida', 'Melgar', 'Murillo', 'Natagaima', 'Ortega', 'Palocabildo', 'Piedras', 'Planadas', 'Prado', 'Purificación', 'Rioblanco', 'Roncesvalles', 'Saldaña', 'San Sebastián de Mariquita', 'Santa Isabel', 'Suárez', 'Valle de San José', 'Venadillo', 'Villahermosa', 'Villarrica'],
+    'Valle del Cauca': ['Cali', 'Palmira', 'Buenaventura', 'Tuluá', 'Cartago', 'Buga', 'Yumbo', 'Jamundí', 'Santander de Quilichao', 'Roldanillo', 'Caicedonia', 'Sevilla', 'Zarzal', 'La Unión', 'Toro', 'Obando', 'El Cairo', 'Argelia', 'El Águila', 'Ansermanuevo', 'Trujillo', 'Bolívar', 'Río Frío', 'El Dovio', 'La Victoria', 'La Cumbre', 'Dagua', 'Restrepo', 'Yotoco', 'Vijes', 'Ginebra', 'Guacarí', 'San Pedro', 'Buga La Grande', 'Candelaria', 'Florida', 'Pradera', 'Palmira', 'El Cerrito', 'Ginebra', 'Calima', 'El Darién', 'Ulloa', 'Alcalá', 'Cartago'],
+    'Vaupés': ['Mitú', 'Carurú', 'Taraira', 'Papunaua', 'Yavaraté'],
+    'Vichada': ['Puerto Carreño', 'La Primavera', 'Santa Rosalía', 'Cumaribo']
+};
+
+function populateCities() {
+    const datalist = document.getElementById('cityDatalist');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    const allCities = [];
+    for (const [dept, cities] of Object.entries(COLOMBIAN_CITIES)) {
+        cities.forEach(city => {
+            allCities.push({ city, dept });
+            const opt = document.createElement('option');
+            opt.value = city;
+            opt.label = `${city} (${dept})`;
+            datalist.appendChild(opt);
+        });
+    }
+}
+
+function loadClientData() {
+    const idEl = document.getElementById('m_sale_client_id');
+    if (!idEl) return;
+    const clientId = idEl.value.trim();
+    if (!clientId || clientId.length < 3) return;
+
+    const client = (state.clients || []).find(c => c.id === clientId);
+    if (client) {
+        document.getElementById('m_sale_client').value = client.name || '';
+        const citySelect = document.getElementById('m_sale_city');
+        if (citySelect) citySelect.value = client.city || '';
+    }
+}
+
+function saveClientData(clientId, name, city) {
+    if (!clientId || !name) return;
+    if (!state.clients) state.clients = [];
+    const existing = state.clients.findIndex(c => c.id === clientId);
+    const clientData = { id: clientId, name, city, lastPurchase: new Date().toISOString() };
+    if (existing !== -1) {
+        state.clients[existing] = { ...state.clients[existing], ...clientData };
+    } else {
+        clientData.createdAt = new Date().toISOString();
+        state.clients.push(clientData);
+    }
+}
+
 function onSalePeriodChange() {
     const period = document.getElementById('filterSalePeriod').value;
     const customDiv = document.getElementById('customSaleDates');
@@ -88,8 +168,9 @@ function updateSaleTotal() {
 const saleForm = document.getElementById('saleForm');
 if (saleForm) saleForm.onsubmit = function (e) {
     e.preventDefault();
+    const clientId = document.getElementById('m_sale_client_id').value.trim();
     const client = document.getElementById('m_sale_client').value.trim();
-    const city = document.getElementById('m_sale_city').value.trim();
+    const city = document.getElementById('m_sale_city').value;
     const source = document.getElementById('m_sale_source').value;
     const saleDate = document.getElementById('m_sale_date').value;
 
@@ -106,10 +187,12 @@ if (saleForm) saleForm.onsubmit = function (e) {
             s.price = prices[0];
         }
         s.client = client; s.city = city; s.source = source; s.saleDate = saleDate;
+        s.clientId = clientId;
         const serials = s.devices ? s.devices.map(d => d.serial) : [s.serial];
         const totalPrice = s.total || s.price;
         const trans = state.transactions.find(t => t.type === 'income' && t.category === 'Venta' && serials.some(ser => t.description.includes(ser)));
         if (trans) { trans.amount = totalPrice; trans.date = saleDate; trans.description = `Venta ${serials.length} equipo(s) — ${serials.join(', ')} — Cliente: ${client}`; }
+        if (clientId) saveClientData(clientId, client, city);
         saveState(); closeModal('saleModal'); renderSales(); updateDashboard();
         return;
     }
@@ -151,7 +234,7 @@ if (saleForm) saleForm.onsubmit = function (e) {
     const saleId = Date.now() + '-' + Math.random().toString(36).substr(2, 5);
     state.sales.push({
         id: saleId, devices, total: totalPrice,
-        client, city, source, saleDate,
+        client, clientId, city, source, saleDate,
         createdAt: new Date().toISOString()
     });
     state.transactions.push({
@@ -161,6 +244,7 @@ if (saleForm) saleForm.onsubmit = function (e) {
         amount: totalPrice, date: saleDate, createdAt: new Date().toISOString()
     });
 
+    if (clientId) saveClientData(clientId, client, city);
     saveState(); closeModal('saleModal'); renderSales(); updateDashboard();
 };
 
@@ -265,9 +349,11 @@ function editSale(serial) {
     const s = state.sales[index];
 
     populateSources();
+    populateCities();
     document.getElementById('m_sale_date').value = s.saleDate;
     document.getElementById('m_sale_client').value = s.client;
-    document.getElementById('m_sale_city').value = s.city;
+    document.getElementById('m_sale_client_id').value = s.clientId || '';
+    document.getElementById('m_sale_city').value = s.city || '';
     document.getElementById('m_sale_source').value = s.source;
 
     const deviceList = document.getElementById('saleDeviceList');
@@ -421,3 +507,139 @@ if (returnForm) returnForm.onsubmit = async (e) => {
               action === 'Garantía' ? 'En Garantía' : 'Baja'
           }`);
 };
+
+// ── Clients / Clientes ─────────────────────────────────────────
+function getClientStats(clientId) {
+    const sales = state.sales.filter(s => s.clientId === clientId && s.returned !== true);
+    const totalSpent = sales.reduce((sum, s) => sum + getSaleTotal(s), 0);
+    const lastSale = sales.length > 0 ? sales.reduce((a, b) => new Date(a.saleDate) > new Date(b.saleDate) ? a : b) : null;
+    return { count: sales.length, totalSpent, lastSale };
+}
+
+function renderClients() {
+    const search = (document.getElementById('searchClients')?.value || '').toLowerCase().trim();
+    const clients = state.clients || [];
+    const tbody = document.querySelector('#clientsTable tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    let filtered = clients;
+    if (search) {
+        filtered = clients.filter(c =>
+            (c.id || '').toLowerCase().includes(search) ||
+            (c.name || '').toLowerCase().includes(search) ||
+            (c.city || '').toLowerCase().includes(search)
+        );
+    }
+
+    // Ordenar por última compra descendente
+    filtered.sort((a, b) => {
+        const da = a.lastPurchase ? new Date(a.lastPurchase) : new Date(0);
+        const db = b.lastPurchase ? new Date(b.lastPurchase) : new Date(0);
+        return db - da;
+    });
+
+    const totalSalesAll = clients.reduce((sum, c) => sum + getClientStats(c.id).count, 0);
+    let topCity = '—';
+    const cityCount = {};
+    clients.forEach(c => {
+        if (c.city) {
+            cityCount[c.city] = (cityCount[c.city] || 0) + 1;
+        }
+    });
+    const cityEntries = Object.entries(cityCount).sort((a, b) => b[1] - a[1]);
+    if (cityEntries.length > 0) topCity = cityEntries[0][0];
+
+    let lastDate = '—';
+    const allDates = clients.map(c => c.lastPurchase).filter(Boolean).sort().reverse();
+    if (allDates.length > 0) {
+        lastDate = new Date(allDates[0]).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    document.getElementById('cli-kpi-total').innerText = clients.length;
+    document.getElementById('cli-kpi-sales').innerText = totalSalesAll;
+    document.getElementById('cli-kpi-topcity').innerText = topCity;
+    document.getElementById('cli-kpi-last').innerText = lastDate;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-gray);font-weight:500;">${
+            search ? 'No se encontraron clientes con ese criterio.' : 'No hay clientes registrados aún.'
+        }</td></tr>`;
+        lucide.createIcons();
+        return;
+    }
+
+    filtered.forEach(c => {
+        const stats = getClientStats(c.id);
+        const lastPurchaseStr = c.lastPurchase
+            ? new Date(c.lastPurchase).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+            : '—';
+        const name = escapeHtml(c.name || '—');
+        const city = escapeHtml(c.city || '—');
+        const eId = escapeHtml(c.id || '');
+
+        tbody.innerHTML += `
+            <tr>
+                <td data-label="ID" style="font-family:monospace;font-weight:600;">${eId}</td>
+                <td data-label="Nombre">${name}</td>
+                <td data-label="Ciudad">${city}</td>
+                <td data-label="Compras"><strong>${stats.count}</strong></td>
+                <td data-label="Total"><strong>$${stats.totalSpent.toLocaleString()}</strong></td>
+                <td data-label="Última Compra">${lastPurchaseStr}</td>
+                <td data-label="Acciones">
+                    <button onclick="viewClientHistory('${eId}')" class="btn btn-secondary" style="padding:0.3rem 0.8rem;font-size:0.78rem;">
+                        <i data-lucide="eye" style="width:14px;height:14px;"></i> Ver
+                    </button>
+                </td>
+            </tr>`;
+    });
+
+    lucide.createIcons();
+}
+
+function viewClientHistory(clientId) {
+    const client = (state.clients || []).find(c => c.id === clientId);
+    if (!client) return;
+
+    document.getElementById('clientsListView').style.display = 'none';
+    document.getElementById('clientHistoryView').style.display = 'block';
+
+    const title = document.getElementById('clientHistoryTitle');
+    title.innerText = `Historial de ${escapeHtml(client.name)} (${escapeHtml(client.id)})`;
+
+    const tbody = document.querySelector('#clientHistoryTable tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const sales = state.sales.filter(s => s.clientId === clientId).sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
+
+    const emptyEl = document.getElementById('clientHistoryEmpty');
+    if (sales.length === 0) {
+        emptyEl.style.display = 'block';
+        lucide.createIcons();
+        return;
+    }
+    emptyEl.style.display = 'none';
+
+    sales.forEach(s => {
+        const serials = s.devices ? s.devices.map(d => d.serial).join(', ') : s.serial;
+        const models = s.devices ? s.devices.map(d => d.model).join(', ') : s.model;
+        const total = getSaleTotal(s);
+        tbody.innerHTML += `
+            <tr>
+                <td data-label="Fecha">${escapeHtml(s.saleDate)}</td>
+                <td data-label="Dispositivos">${escapeHtml(models)}<br><small style="color:var(--text-gray);font-size:0.7rem;">${escapeHtml(serials)}</small></td>
+                <td data-label="Total"><strong>$${total.toLocaleString()}</strong></td>
+                <td data-label="Ciudad">${escapeHtml(s.city || '—')}</td>
+                <td data-label="Canal">${escapeHtml(s.source || '—')}</td>
+            </tr>`;
+    });
+
+    lucide.createIcons();
+}
+
+function showClientsList() {
+    document.getElementById('clientsListView').style.display = 'block';
+    document.getElementById('clientHistoryView').style.display = 'none';
+    renderClients();
+}

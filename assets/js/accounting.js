@@ -115,12 +115,38 @@ function renderAccounting() {
     }
 
     if (document.getElementById('acc-opening-stock-cost')) document.getElementById('acc-opening-stock-cost').innerText = `$${openingStock.toLocaleString()}`;
-    if (document.getElementById('acc-merch-available')) document.getElementById('acc-merch-available').innerText = `$${closingStock.toLocaleString()}`;
+    if (document.getElementById('acc-opening-stock-units')) document.getElementById('acc-opening-stock-units').innerText = `${state.inventory.filter(i => {
+        const d = parseDateLocal(i.entryDate);
+        if (!d || (range && d >= range.from)) return false;
+        const sale = state.sales.find(s => {
+            if (s.devices) return s.devices.some(dd => dd.serial === i.serial);
+            return s.serial === i.serial;
+        });
+        if (sale) {
+            const sd = parseDateLocal(sale.saleDate);
+            if (sd && (range && sd < range.from)) return false;
+        }
+        return true;
+    }).length} equipos`;
     if (document.getElementById('acc-stagnant-value')) document.getElementById('acc-stagnant-value').innerText = `$${stagnantStockValue.toLocaleString()}`;
 
     if (document.getElementById('acc-merch-purchased')) document.getElementById('acc-merch-purchased').innerText = `$${costOfInventoryPurchased.toLocaleString()}`;
+    if (document.getElementById('acc-purchased-units')) document.getElementById('acc-purchased-units').innerText = `${inventoryEntries.length} equipos`;
     if (document.getElementById('acc-merch-cost-sold')) document.getElementById('acc-merch-cost-sold').innerText = `$${costOfMerchSold.toLocaleString()}`;
-    if (document.getElementById('acc-merch-available')) document.getElementById('acc-merch-available').innerText = `$${availableStockValue.toLocaleString()}`;
+    if (document.getElementById('acc-merch-available')) document.getElementById('acc-merch-available').innerText = `$${closingStock.toLocaleString()}`;
+    if (document.getElementById('acc-closing-stock-units')) document.getElementById('acc-closing-stock-units').innerText = `${state.inventory.filter(i => {
+        const d = parseDateLocal(i.entryDate);
+        if (!d || (range && d > range.to)) return false;
+        const sale = state.sales.find(s => {
+            if (s.devices) return s.devices.some(dd => dd.serial === i.serial);
+            return s.serial === i.serial;
+        });
+        if (sale) {
+            const sd = parseDateLocal(sale.saleDate);
+            if (sd && (range && sd <= range.to)) return false;
+        }
+        return true;
+    }).length} equipos`;
     if (document.getElementById('acc-total-op-expenses')) document.getElementById('acc-total-op-expenses').innerText = `$${opExpenses.toLocaleString()}`;
     if (document.getElementById('acc-returns-total')) document.getElementById('acc-returns-total').innerText = `$${totalReturnsPaid.toLocaleString()}`;
     if (document.getElementById('acc-returns-count')) document.getElementById('acc-returns-count').innerText = returns.length;
@@ -133,7 +159,7 @@ function renderAccounting() {
     if (document.getElementById('acc-expense-categories')) document.getElementById('acc-expense-categories').innerHTML = expHtml;
 
     if (document.getElementById('acc-sales-total')) document.getElementById('acc-sales-total').innerText = `$${totalSales.toLocaleString()}`;
-    if (document.getElementById('acc-sales-count')) document.getElementById('acc-sales-count').innerText = sales.length;
+    if (document.getElementById('acc-sales-count')) document.getElementById('acc-sales-count').innerText = `${sales.reduce((sum, s) => sum + (s.devices ? s.devices.length : 1), 0)} equipos`;
     if (document.getElementById('acc-sales-avg')) document.getElementById('acc-sales-avg').innerText = sales.length > 0 ? `$${(totalSales / sales.length).toLocaleString()}` : '$0';
     if (document.getElementById('acc-total-other-income')) document.getElementById('acc-total-other-income').innerText = `$${otherIncome.toLocaleString()}`;
     if (document.getElementById('acc-final-total-income')) document.getElementById('acc-final-total-income').innerText = `$${totalIncome.toLocaleString()}`;

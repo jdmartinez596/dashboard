@@ -115,6 +115,9 @@
                 <i data-lucide="calculator"></i> Contabilidad
             </li>
 
+            <li class="nav-item" onclick="showView('clients')">
+                <i data-lucide="users"></i> Clientes
+            </li>
             <li class="nav-item" onclick="showView('settings')">
                 <i data-lucide="settings"></i> Configuración
             </li>
@@ -276,6 +279,15 @@
                     <i data-lucide="shopping-cart"></i> Registrar Venta
                 </button>
             </header>
+            <div class="section-card" style="margin-bottom:1.5rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                    <div class="chart-title" style="margin:0;">Ventas por Ciudad</div>
+                </div>
+                <div style="position:relative;height:180px;">
+                    <canvas id="citySalesChart"></canvas>
+                    <div id="citySalesEmpty" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-gray);font-size:0.85rem;font-weight:500;">Sin datos de ventas</div>
+                </div>
+            </div>
             <div class="section-card">
                 <div class="filters">
                     <input type="text" placeholder="Buscar por Cliente, Serial o Ciudad..." id="searchSales"
@@ -311,6 +323,77 @@
                         </thead>
                         <tbody></tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Clients / Clientes -->
+        <div id="clients" class="view">
+            <header>
+                <h1>Historial de Clientes</h1>
+            </header>
+            <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:1.5rem;">
+                <div class="kpi-card" style="border-bottom:4px solid var(--deep-blue);">
+                    <div class="kpi-label"><i data-lucide="users" style="width:14px;height:14px;"></i> TOTAL CLIENTES</div>
+                    <div class="kpi-value" id="cli-kpi-total">0</div>
+                </div>
+                <div class="kpi-card" style="border-bottom:4px solid #047481;">
+                    <div class="kpi-label"><i data-lucide="shopping-bag" style="width:14px;height:14px;"></i> VENTAS TOTALES</div>
+                    <div class="kpi-value" id="cli-kpi-sales" style="color:#047481;">0</div>
+                </div>
+                <div class="kpi-card" style="border-bottom:4px solid var(--vibrant-red);">
+                    <div class="kpi-label"><i data-lucide="dollar-sign" style="width:14px;height:14px;"></i> TOP CIUDAD</div>
+                    <div class="kpi-value" id="cli-kpi-topcity" style="color:var(--vibrant-red);font-size:1rem;">—</div>
+                </div>
+                <div class="kpi-card" style="border-bottom:4px solid var(--soft-blue);">
+                    <div class="kpi-label"><i data-lucide="clock" style="width:14px;height:14px;"></i> ÚLTIMA VENTA</div>
+                    <div class="kpi-value" id="cli-kpi-last" style="color:var(--soft-blue);font-size:1rem;">—</div>
+                </div>
+            </div>
+            <div class="section-card">
+                <div class="filters" style="margin-bottom:1rem;">
+                    <input type="text" placeholder="Buscar cliente por ID, Nombre o Ciudad..." id="searchClients" oninput="renderClients()" style="flex:1;">
+                </div>
+                <div id="clientsListView">
+                    <div style="overflow-x:auto;">
+                        <table id="clientsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID (Teléfono / Documento)</th>
+                                    <th>Nombre</th>
+                                    <th>Ciudad</th>
+                                    <th>Compras</th>
+                                    <th>Total Gastado</th>
+                                    <th>Última Compra</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="clientHistoryView" style="display:none;">
+                    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                        <button class="btn btn-secondary" onclick="showClientsList()" style="padding:0.4rem 1rem;font-size:0.82rem;">
+                            <i data-lucide="arrow-left"></i> Volver
+                        </button>
+                        <h3 id="clientHistoryTitle" style="margin:0;color:var(--deep-blue);">Historial de compras</h3>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table id="clientHistoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Dispositivos</th>
+                                    <th>Total</th>
+                                    <th>Ciudad</th>
+                                    <th>Canal</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div id="clientHistoryEmpty" style="text-align:center;padding:3rem 0;color:var(--text-gray);font-weight:500;">Este cliente no tiene compras registradas.</div>
                 </div>
             </div>
         </div>
@@ -734,12 +817,17 @@
                 <!-- Datos comunes -->
                 <div class="form-grid">
                     <div class="form-group">
+                        <label>ID Cliente (Teléfono / Documento)</label>
+                        <input type="text" id="m_sale_client_id" placeholder="Ej: 3001234567" onblur="loadClientData()" style="font-family:monospace;letter-spacing:0.5px;">
+                    </div>
+                    <div class="form-group">
                         <label>Nombre del Cliente</label>
                         <input type="text" id="m_sale_client" required>
                     </div>
                     <div class="form-group">
                         <label>Ciudad</label>
-                        <input type="text" id="m_sale_city" required placeholder="Ej: Bogotá">
+                        <input type="text" id="m_sale_city" list="cityDatalist" required placeholder="Ej: Medellín" autocomplete="off">
+                        <datalist id="cityDatalist"></datalist>
                     </div>
                     <div class="form-group">
                         <label>Origen / Vendedor</label>
