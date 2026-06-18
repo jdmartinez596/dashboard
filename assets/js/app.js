@@ -529,15 +529,15 @@ function initCharts() {
         const ctxCity = cityCanvas.getContext('2d');
         citySalesChart = new Chart(ctxCity, {
             type: 'bar',
-            data: { labels: [], datasets: [{ label: 'Ventas ($)', data: [], backgroundColor: '#121E6C', borderRadius: 6 }] },
+            data: { labels: [], datasets: [{ label: 'Ventas', data: [], backgroundColor: '#121E6C', borderRadius: 6 }] },
             options: {
                 responsive: true, maintainAspectRatio: false, resizeDelay: 200,
                 indexAxis: 'y',
                 scales: {
-                    x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 }, callback: function (v) { return '$' + v.toLocaleString(); } } },
+                    x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 }, callback: function (v) { return v.toLocaleString(); } } },
                     y: { grid: { display: false }, ticks: { font: { size: 9 } } }
                 },
-                plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (ctx) { return '$' + ctx.parsed.x.toLocaleString(); } } } }
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (ctx) { return ctx.parsed.x.toLocaleString() + ' ventas'; } } } }
             }
         });
     }
@@ -596,9 +596,9 @@ function updateChartsData() {
         const cityData = {};
         state.sales.forEach(s => {
             const city = s.city || 'Sin ciudad';
-            cityData[city] = (cityData[city] || 0) + getSaleTotal(s);
+            cityData[city] = (cityData[city] || 0) + 1;
         });
-        const sortedCities = Object.entries(cityData).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        const sortedCities = Object.entries(cityData).sort((a, b) => b[1] - a[1]).slice(0, 5);
         const emptyEl = document.getElementById('citySalesEmpty');
         if (sortedCities.length === 0) {
             if (emptyEl) emptyEl.style.display = 'block';
