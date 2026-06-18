@@ -36,19 +36,45 @@ const COLOMBIAN_CITIES = {
 };
 
 function populateCities() {
-    const datalist = document.getElementById('cityDatalist');
-    if (!datalist) return;
-    datalist.innerHTML = '';
-    const allCities = [];
+    const dropdown = document.getElementById('cityDropdown');
+    if (!dropdown) return;
+    dropdown.innerHTML = '';
     for (const [dept, cities] of Object.entries(COLOMBIAN_CITIES)) {
         cities.forEach(city => {
-            allCities.push({ city, dept });
-            const opt = document.createElement('option');
-            opt.value = city;
-            opt.label = `${city} (${dept})`;
-            datalist.appendChild(opt);
+            const item = document.createElement('div');
+            item.className = 'city-option';
+            item.dataset.city = city;
+            item.dataset.dept = dept;
+            item.textContent = `${city} (${dept})`;
+            item.onclick = () => selectCity(city);
+            item.onmousedown = (e) => e.preventDefault();
+            dropdown.appendChild(item);
         });
     }
+}
+
+function filterCities(query) {
+    const dropdown = document.getElementById('cityDropdown');
+    if (!dropdown) return;
+    const q = query.toLowerCase().trim();
+    const items = dropdown.querySelectorAll('.city-option');
+    let hasMatch = false;
+    items.forEach(el => {
+        const match = !q || el.textContent.toLowerCase().includes(q);
+        el.style.display = match ? 'flex' : 'none';
+        if (match) hasMatch = true;
+    });
+    dropdown.style.display = q ? (hasMatch ? 'block' : 'none') : 'block';
+}
+
+function selectCity(city) {
+    document.getElementById('m_sale_city').value = city;
+    hideCityDropdown();
+}
+
+function hideCityDropdown() {
+    const dropdown = document.getElementById('cityDropdown');
+    if (dropdown) dropdown.style.display = 'none';
 }
 
 function loadClientData() {
