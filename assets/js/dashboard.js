@@ -53,8 +53,11 @@ function updateDashboard() {
         kpiUtility.parentElement.style.borderLeft = `4px solid ${profitCurM >= 0 ? '#047481' : 'var(--vibrant-red)'}`;
     }
 
+    const soldUnitsCurM = salesCurM.reduce((sum, s) => sum + (s.devices ? s.devices.length : 1), 0);
+    const soldUnitsPrevM = salesPrevM.reduce((sum, s) => sum + (s.devices ? s.devices.length : 1), 0);
+
     const kpiSold = document.getElementById('kpi-sold');
-    if (kpiSold) kpiSold.innerHTML = `${salesCurM.length} ${getVarBadge(salesCurM.length, salesPrevM.length)}`;
+    if (kpiSold) kpiSold.innerHTML = `${soldUnitsCurM} ${getVarBadge(soldUnitsCurM, soldUnitsPrevM)}`;
 
     const kpiStock = document.getElementById('kpi-stock');
     if (kpiStock) kpiStock.innerText = (state.inventory || []).filter(i => i.status === 'Disponible').length;
