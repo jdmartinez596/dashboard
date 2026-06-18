@@ -46,8 +46,7 @@ function populateCities() {
             item.dataset.city = city;
             item.dataset.dept = dept;
             item.textContent = `${city} (${dept})`;
-            item.onclick = () => selectCity(city);
-            item.onmousedown = (e) => e.preventDefault();
+            item.onpointerdown = (e) => { e.preventDefault(); selectCity(city); };
             dropdown.appendChild(item);
         });
     }
