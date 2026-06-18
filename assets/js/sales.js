@@ -298,8 +298,8 @@ function renderSales() {
         const serials = getSaleSerials(s);
         const firstSerial = serials[0];
         const modelHtml = s.devices
-            ? `<div style="display:flex;flex-direction:column;gap:0.35rem;">${s.devices.map(d => `<div style="display:flex;flex-direction:column;gap:0.05rem;${s.devices.indexOf(d) > 0 ? 'padding-top:0.35rem;border-top:1px dashed var(--border);' : ''}"><strong style="font-size:0.82rem;">${escapeHtml(d.model)}</strong><small style="font-size:0.7rem;color:var(--text-gray);font-family:monospace;">${escapeHtml(d.serial)}</small></div>`).join('')}</div>`
-            : `<div style="display:flex;flex-direction:column;gap:0.05rem;"><strong style="font-size:0.82rem;">${escapeHtml(s.model)}</strong><small style="font-size:0.7rem;color:var(--text-gray);font-family:monospace;">${escapeHtml(s.serial)}</small></div>`;
+            ? `<div style="display:flex;flex-direction:column;gap:0.35rem;">${s.devices.map(d => `<div style="display:flex;align-items:baseline;gap:0.4rem;${s.devices.indexOf(d) > 0 ? 'padding-top:0.35rem;border-top:1px dashed var(--border);' : ''}"><strong style="font-size:0.82rem;">${escapeHtml(d.model)}</strong><span style="font-size:0.75rem;color:var(--text-gray);font-family:monospace;">${escapeHtml(d.serial)}</span></div>`).join('')}</div>`
+            : `<div style="display:flex;align-items:baseline;gap:0.4rem;"><strong style="font-size:0.82rem;">${escapeHtml(s.model)}</strong><span style="font-size:0.75rem;color:var(--text-gray);font-family:monospace;">${escapeHtml(s.serial)}</span></div>`;
 
         const eClient = escapeHtml(s.client);
         const eSource = escapeHtml(s.source);
