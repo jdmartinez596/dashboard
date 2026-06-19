@@ -193,7 +193,7 @@ function showSyncStatus(status) {
     if (!icon || !text) return;
 
     if (status === 'synced') {
-        icon.innerHTML = '<i data-lucide="cloud-check" style="color: #047481"></i>';
+        icon.innerHTML = '<i data-lucide="badge-check" style="color: #047481"></i>';
         text.innerText = 'Sincronizado';
     } else if (status === 'syncing') {
         icon.innerHTML = '<i data-lucide="refresh-cw" class="spin"></i>';

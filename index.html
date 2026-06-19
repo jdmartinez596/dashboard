@@ -40,10 +40,11 @@
         connect-src 'self'
             https://idqhbfygmwyujrrebebt.supabase.co
             wss://idqhbfygmwyujrrebebt.supabase.co
-            https://generativelanguage.googleapis.com;
+            https://generativelanguage.googleapis.com
+            https://cdn.jsdelivr.net
+            https://unpkg.com;
         media-src 'self' blob:;
         worker-src 'self' blob:;
-        frame-ancestors 'self';
     ">
     <title>Gest Inventary</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23121E6C'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>">
@@ -1057,8 +1058,6 @@
         </div>
     </div>
 
-    <!-- Secrets (NO SUBIR A GITHUB) -->
-    <script src='config/secrets.js' charset='UTF-8'></script>
     <!-- Config -->
     <script src='config/supabase.js' charset='UTF-8'></script>
     <!-- Utilidades -->
