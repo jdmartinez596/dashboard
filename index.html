@@ -806,6 +806,15 @@
                 <h3 style="margin-bottom: 1.5rem">Límites de Inventario (Alertas Críticas)</h3>
                 <div id="thresholdSettings" class="form-grid"></div>
             </div>
+            <div class="section-card" style="border-color: rgba(238,66,78,0.2);">
+                <h3 style="margin-bottom: 1rem; color: var(--vibrant-red);">Mantenimiento</h3>
+                <p style="font-size:0.85rem; color:var(--text-gray); margin-bottom:1rem;">
+                    Si la app no refleja los cambios después de una actualización, limpia la caché del Service Worker.
+                </p>
+                <button class="btn btn-secondary" onclick="clearAppCache()" style="color:var(--vibrant-red); border-color:rgba(238,66,78,0.3);">
+                    <i data-lucide="refresh-cw"></i> Limpiar Caché y Recargar
+                </button>
+            </div>
         </div>
 
     </main>

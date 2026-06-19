@@ -211,12 +211,35 @@ function showSyncStatus(status) {
     lucide.createIcons();
 }
 
+let _cacheTapCount = 0;
+let _cacheTapTimer = null;
+
 function checkSyncStatus() {
+    _cacheTapCount++;
+    if (_cacheTapCount >= 5) {
+        _cacheTapCount = 0;
+        clearTimeout(_cacheTapTimer);
+        if (confirm('¿Limpiar caché y recargar la app?')) clearAppCache();
+        return;
+    }
+    clearTimeout(_cacheTapTimer);
+    _cacheTapTimer = setTimeout(() => { _cacheTapCount = 0; }, 2000);
+
     const status = navigator.onLine ? 'online' : 'offline';
-    const msg = 'Estado de conexión: ' + (status === 'online' ? 'Conectado' : 'Sin conexión') +
-        '\nSinc. pendiente: ' + pendingSync +
-        '\n\nAbre la consola (F12) para ver más detalles.';
+    const msg = 'Estado: ' + (status === 'online' ? 'Conectado' : 'Sin conexión') +
+        ' | Sinc.: ' + (pendingSync ? 'Pendiente' : 'OK') +
+        '\n\nToca 5 veces seguidas para limpiar caché.';
     alert(msg);
+}
+
+function clearAppCache() {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage('CLEAR_CACHE');
+        navigator.serviceWorker.controller.postMessage('SKIP_WAITING');
+    }
+    caches.keys().then(names => names.forEach(name => caches.delete(name)));
+    showToast('Caché limpiada, recargando...', 'success');
+    setTimeout(() => location.reload(), 500);
 }
 
 // --- Toast Notification System ---
