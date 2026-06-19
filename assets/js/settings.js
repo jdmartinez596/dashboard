@@ -12,7 +12,7 @@ function renderSettings() {
         list.innerHTML = '';
         state.settings.categories.forEach(c => {
             const ec = escapeHtml(c);
-            list.innerHTML += `<span class="badge" style="background:var(--light-gray); color:var(--deep-blue); border:1px solid var(--border); display:flex; align-items:center; gap:0.5rem; padding:0.6rem 1rem;">${ec} <i data-lucide="x" size="14" style="cursor:pointer" onclick="removeCategory('${ec}')"></i></span>`;
+            list.innerHTML += `<span class="badge removable-badge" data-type="category" data-value="${ec}" style="background:var(--light-gray); color:var(--deep-blue); border:1px solid var(--border); display:flex; align-items:center; gap:0.5rem; padding:0.6rem 1rem;">${ec} <i data-lucide="x" size="14" style="cursor:pointer"></i></span>`;
         });
     }
 
@@ -23,9 +23,9 @@ function renderSettings() {
         sources.forEach(s => {
             const es = escapeHtml(s);
             sourceList.innerHTML += `
-                <span class="badge" style="background: var(--light-gray); color: var(--deep-blue); border: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border-radius: 100px; font-size: 0.85rem; font-weight: 600;">
+                <span class="badge removable-badge" data-type="source" data-value="${es}" style="background: var(--light-gray); color: var(--deep-blue); border: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border-radius: 100px; font-size: 0.85rem; font-weight: 600;">
                     ${es}
-                    <i data-lucide="x" style="width:14px; height:14px; cursor:pointer;" onclick="removeSource('${es}')"></i>
+                    <i data-lucide="x" style="width:14px; height:14px; cursor:pointer;"></i>
                 </span>`;
         });
     }
@@ -36,13 +36,12 @@ function renderSettings() {
         Object.keys(state.settings.thresholds).forEach(m => {
             const em = escapeHtml(m);
             modelList.innerHTML += `
-                <span class="badge" style="background:var(--light-gray); 
+                <span class="badge removable-badge" data-type="model" data-value="${em}" style="background:var(--light-gray); 
                 color:var(--deep-blue); border:1px solid var(--border); 
                 display:flex; align-items:center; gap:0.5rem; 
                 padding:0.6rem 1rem;">
                     ${em}
-                    <i data-lucide="x" size="14" style="cursor:pointer" 
-                       onclick="removeModel('${em}')"></i>
+                    <i data-lucide="x" size="14" style="cursor:pointer"></i>
                 </span>`;
         });
     }
@@ -51,10 +50,28 @@ function renderSettings() {
         thresholds.innerHTML = '';
         Object.keys(state.settings.thresholds).forEach(m => {
             const em = escapeHtml(m);
-            thresholds.innerHTML += `<div class="form-group"><label>${em}</label><input type="number" value="${state.settings.thresholds[m]}" onchange="updateThreshold('${em}', this.value)"></div>`;
+            thresholds.innerHTML += `<div class="form-group"><label>${em}</label><input type="number" class="threshold-input" data-model="${em}" value="${state.settings.thresholds[m]}"></div>`;
         });
     }
     lucide.createIcons();
+    attachSettingsEvents();
+}
+
+function attachSettingsEvents() {
+    document.querySelectorAll('.removable-badge').forEach(el => {
+        el.querySelector('[data-lucide="x"]')?.addEventListener('click', () => {
+            const type = el.dataset.type;
+            const value = el.dataset.value;
+            if (type === 'category') removeCategory(value);
+            else if (type === 'source') removeSource(value);
+            else if (type === 'model') removeModel(value);
+        });
+    });
+    document.querySelectorAll('.threshold-input').forEach(el => {
+        el.addEventListener('change', () => {
+            updateThreshold(el.dataset.model, el.value);
+        });
+    });
 }
 
 function addModel() {

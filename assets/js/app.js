@@ -75,11 +75,12 @@ async function saveState() {
     try {
         const encrypted = await encryptStore(state);
         localStorage.setItem(key, encrypted);
+        localStorage.setItem(key + '_time', Date.now().toString());
     } catch (e) {
-        console.warn('Fallo cifrado localStorage, guardando en plano:', e);
-        localStorage.setItem(key, JSON.stringify(state));
+        console.error('Fallo cifrado localStorage, no se guardará:', e);
+        showToast('Error al guardar datos localmente', 'error');
+        return;
     }
-    localStorage.setItem(key + '_time', Date.now().toString());
 
     // Actualizar UI con datos actuales
     refreshUI();
@@ -89,7 +90,6 @@ async function saveState() {
         await syncToSupabase();
     } else {
         pendingSync = true;
-        console.warn('Offline, pendiente de sincronizar');
     }
 }
 
@@ -114,8 +114,7 @@ async function syncToSupabase() {
             updated_at: new Date().toISOString()
         };
 
-        console.log('Supabase guardando para user:', currentUser.id,
-            'inv:', state.inventory?.length, 'ventas:', state.sales?.length);
+        console.log('Supabase sync iniciado');
 
         const { error } = await supabaseClient
             .from('dashboard_state')
@@ -158,7 +157,7 @@ async function loadState() {
     if (isOnline) {
         try {
             showSyncStatus('syncing');
-            console.log('Cargando desde Supabase para user:', currentUser.id);
+            console.log('Cargando desde Supabase');
             const { data, error } = await supabaseClient
                 .from('dashboard_state')
                 .select('data, updated_at')
@@ -175,21 +174,15 @@ async function loadState() {
                 const localTime = parseInt(
                     localStorage.getItem(localKey + '_time') || '0'
                 );
-                console.log('Datos desde Supabase:',
-                    'cloudTime:', cloudTime, 'localTime:', localTime,
-                    'items:', data.data.inventory?.length,
-                    'ventas:', data.data.sales?.length);
-
                 if (cloudTime >= localTime) {
                     state = data.data;
                     try {
                         const encrypted = await encryptStore(state);
                         localStorage.setItem(localKey, encrypted);
+                        localStorage.setItem(localKey + '_time', cloudTime.toString());
                     } catch (e) {
-                        localStorage.setItem(localKey, JSON.stringify(state));
+                        console.error('Fallo cifrado al guardar datos de la nube:', e);
                     }
-                    localStorage.setItem(localKey + '_time', cloudTime.toString());
-                    console.log('Usando datos de la nube');
                 } else {
                     console.log('Datos locales más recientes, usando local');
                 }
@@ -281,7 +274,9 @@ function subscribeToRealtime() {
 
                 if (cloudTime > localTimeMs) {
                     state = payload.new.data;
-                    localStorage.setItem(localKey, JSON.stringify(state));
+                    encryptStore(state).then(encrypted => {
+                        localStorage.setItem(localKey, encrypted);
+                    }).catch(() => {});
                     localStorage.setItem(localKey + '_time', cloudTime.toString());
                     refreshUI();
                     showSyncStatus('synced');

@@ -77,38 +77,8 @@ async function decryptStored(encoded) {
     }
 }
 
-// ── SEGURIDAD: Encriptación XOR + base64 (capa adicional) ─────
-function encryptXOR(data, key) {
-    const str = JSON.stringify(data);
-    const keyArr = key.split('').map(c => c.charCodeAt(0));
-    const encoded = str.split('').map((c, i) =>
-        String.fromCharCode(
-            c.charCodeAt(0) ^ keyArr[i % keyArr.length]
-        )
-    ).join('');
-    return btoa(unescape(encodeURIComponent(encoded)));
-}
-
-function decryptXOR(encrypted, key) {
-    try {
-        const decoded = decodeURIComponent(
-            escape(atob(encrypted))
-        );
-        const keyArr = key.split('').map(c => c.charCodeAt(0));
-        const decrypted = decoded.split('').map((c, i) =>
-            String.fromCharCode(
-                c.charCodeAt(0) ^ keyArr[i % keyArr.length]
-            )
-        ).join('');
-        return JSON.parse(decrypted);
-    } catch(e) {
-        return null;
-    }
-}
-
-function getXORKey() {
-    return currentUser?.id?.substring(0, 16) || 'default-key-2026';
-}
+// Nota: XOR no es cifrado real, no usar para datos sensibles.
+// Se mantienen las funciones encryptStore/decryptStored con AES-GCM.
 
 // ── SEGURIDAD: Auto-logout por inactividad ─────────────────────
 let inactivityTimer = null;
@@ -244,25 +214,9 @@ function showSyncStatus(status) {
 function checkSyncStatus() {
     const status = navigator.onLine ? 'online' : 'offline';
     const msg = 'Estado de conexión: ' + (status === 'online' ? 'Conectado' : 'Sin conexión') +
-        '\nUsuario: ' + (currentUser ? currentUser.email : 'No autenticado') +
         '\nSinc. pendiente: ' + pendingSync +
         '\n\nAbre la consola (F12) para ver más detalles.';
     alert(msg);
-    console.log('=== CHECK SYNC ===');
-    console.log('navigator.onLine:', navigator.onLine);
-    console.log('currentUser:', currentUser?.email);
-    console.log('pendingSync:', pendingSync);
-    console.log('state inventory:', state.inventory?.length);
-    console.log('state sales:', state.sales?.length);
-    console.log('state transactions:', state.transactions?.length);
-    console.log('state returns:', state.returns?.length);
-    if (currentUser) {
-        const key = LOCAL_STORAGE_KEY + '_' + currentUser.id;
-        const localData = localStorage.getItem(key);
-        const localTime = localStorage.getItem(key + '_time');
-        console.log('localStorage data exists:', !!localData);
-        console.log('localStorage time:', localTime);
-    }
 }
 
 // --- Toast Notification System ---

@@ -136,8 +136,8 @@ function renderInventory() {
                 </td>
                 <td data-label="Acciones">
                     <div style="display:flex; gap:0.5rem;">
-                        <button onclick="editInventory('${eSerial}')" style="background:none; border:none; color:var(--soft-blue); cursor:pointer;"><i data-lucide="pencil" size="18"></i></button>
-                        <button onclick="deleteItem('${eSerial}')" style="background:none; border:none; color:var(--vibrant-red); cursor:pointer;"><i data-lucide="trash-2" size="18"></i></button>
+                        <button class="inv-edit-btn" data-serial="${eSerial}" style="background:none; border:none; color:var(--soft-blue); cursor:pointer;"><i data-lucide="pencil" size="18"></i></button>
+                        <button class="inv-delete-btn" data-serial="${eSerial}" style="background:none; border:none; color:var(--vibrant-red); cursor:pointer;"><i data-lucide="trash-2" size="18"></i></button>
                     </div>
                 </td>
             </tr>`;
@@ -150,6 +150,18 @@ function renderInventory() {
             : `${filteredInv.length} equipo${filteredInv.length !== 1 ? 's' : ''} en total`;
     }
     lucide.createIcons();
+    attachInventoryEvents();
+}
+
+function attachInventoryEvents() {
+    const tbody = document.querySelector('#inventoryTable tbody');
+    if (!tbody) return;
+    tbody.querySelectorAll('.inv-edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => editInventory(btn.dataset.serial));
+    });
+    tbody.querySelectorAll('.inv-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteItem(btn.dataset.serial));
+    });
 }
 
 function editInventory(serial) {
