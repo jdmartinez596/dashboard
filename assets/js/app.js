@@ -20,6 +20,11 @@ let currentReturnSaleIndex = -1;
 let currentReturnSerial = '';
 let isOnline = navigator.onLine;
 let pendingSync = false;
+let _syncRetryCount = 0;
+let _saveDebounceTimer = null;
+let _lastSyncTime = 0;
+const SYNC_MIN_INTERVAL = 2000;
+const SYNC_MAX_RETRIES = 5;
 let currentUser = null;
 let isRegisterMode = false;
 
@@ -63,41 +68,68 @@ function validateStateBeforeSave(stateToSave) {
     return true;
 }
 
-async function saveState() {
+function saveState() {
     if (!currentUser) return;
-    if (!validateStateBeforeSave(state)) {
-        console.error('Estado inválido, no se guardará');
-        return;
-    }
-    const key = LOCAL_STORAGE_KEY + '_' + currentUser.id;
 
-    // Guardar en localStorage inmediatamente (cifrado)
-    try {
-        const encrypted = await encryptStore(state);
-        localStorage.setItem(key, encrypted);
-        localStorage.setItem(key + '_time', Date.now().toString());
-    } catch (e) {
-        console.error('Fallo cifrado localStorage, no se guardará:', e);
-        showToast('Error al guardar datos localmente', 'error');
-        return;
-    }
+    clearTimeout(_saveDebounceTimer);
+    _saveDebounceTimer = setTimeout(async () => {
+        if (!validateStateBeforeSave(state)) {
+            console.error('Estado inválido, no se guardará');
+            return;
+        }
+        const key = LOCAL_STORAGE_KEY + '_' + currentUser.id;
 
-    // Actualizar UI con datos actuales
-    refreshUI();
+        try {
+            const encrypted = await encryptStore(state);
+            localStorage.setItem(key, encrypted);
+            localStorage.setItem(key + '_time', Date.now().toString());
+        } catch (e) {
+            console.error('Fallo cifrado localStorage:', e);
+            showToast('Error al guardar datos localmente', 'error');
+            return;
+        }
 
-    // Sincronizar con Supabase
-    if (isOnline) {
-        await syncToSupabase();
-    } else {
+        refreshUI();
+        scheduleSync();
+    }, 300);
+}
+
+function scheduleSync() {
+    if (!isOnline || !currentUser) {
         pendingSync = true;
+        return;
+    }
+    const now = Date.now();
+    if (now - _lastSyncTime < SYNC_MIN_INTERVAL) {
+        setTimeout(() => scheduleSync(), SYNC_MIN_INTERVAL);
+        return;
+    }
+    syncToSupabase();
+}
+
+async function checkRealConnectivity() {
+    try {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 5000);
+        const res = await fetch('https://idqhbfygmwyujrrebebt.supabase.co/rest/v1/',
+            { method: 'HEAD', signal: controller.signal });
+        return res.ok || res.status < 500;
+    } catch {
+        return false;
     }
 }
 
 async function syncToSupabase() {
-    if (!currentUser || !isOnline) {
+    if (!currentUser) return;
+
+    const reallyOnline = await checkRealConnectivity();
+    if (!reallyOnline) {
+        isOnline = false;
         pendingSync = true;
+        showSyncStatus('offline');
         return;
     }
+    isOnline = true;
 
     if (typeof supabaseClient === 'undefined') {
         console.error('supabaseClient NO EXISTE');
@@ -108,13 +140,16 @@ async function syncToSupabase() {
 
     try {
         showSyncStatus('syncing');
+        const stateStr = JSON.stringify(state);
+        const compressed = stateStr.length > 10000
+            ? stateStr
+            : stateStr;
+
         const payload = {
             user_id: currentUser.id,
             data: state,
             updated_at: new Date().toISOString()
         };
-
-        console.log('Supabase sync iniciado');
 
         const { error } = await supabaseClient
             .from('dashboard_state')
@@ -122,15 +157,22 @@ async function syncToSupabase() {
 
         if (error) throw error;
 
+        _lastSyncTime = Date.now();
+        _syncRetryCount = 0;
         pendingSync = false;
         showSyncStatus('synced');
-        console.log('Supabase sincronizado OK');
     } catch (err) {
         console.error('Supabase sync error:', err);
-        showToast('Error Supabase: ' + (err.message || err) +
-            '. Los datos están guardados localmente.', 'error');
         showSyncStatus('error');
         pendingSync = true;
+
+        if (_syncRetryCount < SYNC_MAX_RETRIES) {
+            _syncRetryCount++;
+            const delay = Math.min(1000 * Math.pow(2, _syncRetryCount), 30000);
+            setTimeout(() => syncToSupabase(), delay);
+        } else {
+            showToast('No se pudo sincronizar después de varios intentos. Los datos están seguros localmente.', 'error');
+        }
     }
 }
 
@@ -213,25 +255,7 @@ async function loadState() {
     refreshUI();
     showSyncStatus('synced');
     subscribeToRealtime();
-    testSupabaseConnection();
-    syncToSupabase();
-}
-
-async function testSupabaseConnection() {
-    if (!currentUser || !isOnline) return;
-    try {
-        const { data, error } = await supabaseClient
-            .from('dashboard_state')
-            .select('user_id')
-            .limit(1);
-        if (error) {
-            console.error('SUPABASE TEST FALLÓ:', error);
-            showToast('Supabase: ' + error.message + '. Los datos se guardan solo localmente.', 'error');
-        }
-    } catch (err) {
-        console.error('SUPABASE TEST ERROR:', err);
-        showToast('Supabase: No se pudo conectar. Verifica tu conexión.', 'error');
-    }
+    scheduleSync();
 }
 
 function refreshUI() {
@@ -883,7 +907,10 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 window.addEventListener('online', async () => {
     isOnline = true;
     showSyncStatus('online');
-    if (pendingSync) await syncToSupabase();
+    if (pendingSync) {
+        await syncToSupabase();
+        if (!pendingSync) refreshUI();
+    }
 });
 
 window.addEventListener('offline', () => {
