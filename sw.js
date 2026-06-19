@@ -4,6 +4,8 @@ const OFFLINE_URL = '/dashboard/offline.html';
 const ASSETS_TO_CACHE = [
     '/dashboard/',
     '/dashboard/index.html',
+    '/dashboard/offline.html',
+    '/dashboard/manifest.json',
     '/dashboard/assets/css/styles.css',
     '/dashboard/assets/js/utils.js',
     '/dashboard/assets/js/auth.js',
@@ -16,22 +18,15 @@ const ASSETS_TO_CACHE = [
     '/dashboard/assets/js/accounting.js',
     '/dashboard/assets/js/scanner.js',
     '/dashboard/assets/js/settings.js',
-    '/dashboard/assets/js/assistant.js',
-    '/dashboard/manifest.json',
-    'https://cdn.jsdelivr.net/npm/chart.js',
-    'https://unpkg.com/lucide@latest',
-    'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
-    'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
+    '/dashboard/assets/js/assistant.js'
 ];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE.map(url => {
-                return new Request(url, { mode: 'no-cors' });
-            })).catch(err => {
-                console.warn('Cache install error:', err);
-            });
+            return cache.addAll(ASSETS_TO_CACHE);
+        }).catch((err) => {
+            console.warn('Algunos assets no se pudieron cachear:', err);
         })
     );
     self.skipWaiting();
@@ -58,8 +53,20 @@ self.addEventListener('fetch', (event) => {
     }
 
     event.respondWith(
-        fetch(event.request)
-            .then((response) => {
+        caches.match(event.request).then((cached) => {
+            if (cached) {
+                fetch(event.request).then((response) => {
+                    if (response && response.status === 200) {
+                        const responseClone = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseClone);
+                        });
+                    }
+                }).catch(() => {});
+                return cached;
+            }
+
+            return fetch(event.request).then((response) => {
                 if (response && response.status === 200) {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
@@ -67,15 +74,12 @@ self.addEventListener('fetch', (event) => {
                     });
                 }
                 return response;
-            })
-            .catch(() => {
-                return caches.match(event.request).then((cached) => {
-                    if (cached) return cached;
-                    if (event.request.mode === 'navigate') {
-                        return caches.match(OFFLINE_URL);
-                    }
-                });
-            })
+            }).catch(() => {
+                if (event.request.mode === 'navigate') {
+                    return caches.match(OFFLINE_URL);
+                }
+            });
+        })
     );
 });
 

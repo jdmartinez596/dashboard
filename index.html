@@ -25,8 +25,6 @@
     <meta name="msapplication-TileColor" content="#121E6C">
     <meta name="msapplication-TileImage" content="assets/img/icon-144.png">
 
-    <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
@@ -45,7 +43,7 @@
             https://generativelanguage.googleapis.com;
         media-src 'self' blob:;
         worker-src 'self' blob:;
-        frame-ancestors 'none';
+        frame-ancestors 'self' https://pwabuilder.com https://cloudapk.pwabuilder.com;
     ">
     <title>Gest Inventary</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23121E6C'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>">
