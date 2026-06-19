@@ -258,6 +258,10 @@ function refreshUI() {
 
 function subscribeToRealtime() {
     if (!currentUser) return;
+    if (typeof supabaseClient === 'undefined') {
+        console.warn('supabaseClient no disponible para realtime');
+        return;
+    }
 
     supabaseClient.removeAllChannels();
 
@@ -313,7 +317,7 @@ function showView(viewId) {
     if (viewId === 'returns') renderReturns();
     if (viewId === 'clients') renderClients();
     if (viewId === 'settings') renderSettings();
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // ── Modals ────────────────────────────────────────────────────
@@ -872,9 +876,10 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
                 resetInactivityTimer();
             }
         } else if (event === 'SIGNED_OUT') {
+            const userId = currentUser?.id;
             currentUser = null;
             Object.keys(localStorage).forEach(k => {
-                if (k.startsWith('sb-') || k === LOCAL_STORAGE_KEY) localStorage.removeItem(k);
+                if (k.startsWith('sb-') || k.startsWith(LOCAL_STORAGE_KEY + '_' + userId)) localStorage.removeItem(k);
             });
             document.getElementById('loginView').style.display = 'flex';
             document.getElementById('appView').style.display = 'none';

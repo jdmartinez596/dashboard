@@ -185,7 +185,7 @@ function deleteItem(serial) {
             if (sale.devices) {
                 sale.devices = sale.devices.filter(d => d.serial !== serial);
                 if (sale.devices.length === 0) {
-                    state.sales = state.sales.filter(s => s.id !== sale.id);
+                    state.sales = state.sales.filter(s => s.id !== sale.id && s.serial !== sale.serial);
                 }
             } else {
                 state.sales = state.sales.filter(s => s.serial !== serial);

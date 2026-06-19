@@ -24,9 +24,15 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
+            return Promise.allSettled(
+                ASSETS_TO_CACHE.map(url =>
+                    cache.add(url).catch(err =>
+                        console.warn('Fallo al cachear:', url, err)
+                    )
+                )
+            );
         }).catch((err) => {
-            console.warn('Algunos assets no se pudieron cachear:', err);
+            console.warn('Error en instalación del Service Worker:', err);
         })
     );
     self.skipWaiting();

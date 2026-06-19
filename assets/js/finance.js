@@ -65,13 +65,14 @@ function renderFinance() {
         const isAuto = t.category === 'Venta' || t.category === 'Devolución';
         const autoBadge = isAuto ? `<span class="badge" style="background:#E2E8F0; color:var(--text-gray); font-size:0.65rem; margin-left:0.5rem; font-weight:600; padding:0.15rem 0.4rem;">Auto</span>` : '';
         
+        const eId = escapeHtml(String(t.id));
         const editBtn = isAuto 
             ? `<button disabled style="background:none; border:none; color:var(--border); cursor:not-allowed;"><i data-lucide="pencil" size="18"></i></button>`
-            : `<button onclick="editFinance(${t.id})" style="background:none; border:none; color:var(--soft-blue); cursor:pointer;"><i data-lucide="pencil" size="18"></i></button>`;
+            : `<button onclick="editFinance('${eId}')" style="background:none; border:none; color:var(--soft-blue); cursor:pointer;"><i data-lucide="pencil" size="18"></i></button>`;
             
         const deleteBtn = isAuto 
             ? `<button disabled style="background:none; border:none; color:var(--border); cursor:not-allowed;"><i data-lucide="trash-2" size="18"></i></button>`
-            : `<button onclick="deleteFinance(${t.id})" style="background:none; border:none; color:var(--vibrant-red); cursor:pointer;"><i data-lucide="trash-2" size="18"></i></button>`;
+            : `<button onclick="deleteFinance('${eId}')" style="background:none; border:none; color:var(--vibrant-red); cursor:pointer;"><i data-lucide="trash-2" size="18"></i></button>`;
 
         const eCategory = escapeHtml(t.category);
         const eDescription = escapeHtml(t.description);
@@ -123,6 +124,7 @@ function renderFinance() {
 }
 
 function editFinance(id) {
+    id = typeof id === 'string' ? parseFloat(id) : id;
     const index = state.transactions.findIndex(t => t.id === id);
     if (index === -1) return;
     const t = state.transactions[index];
@@ -141,6 +143,7 @@ function editFinance(id) {
 }
 
 function deleteFinance(id) {
+    id = typeof id === 'string' ? parseFloat(id) : id;
     const index = state.transactions.findIndex(t => t.id === id);
     if (index === -1) return;
     const t = state.transactions[index];

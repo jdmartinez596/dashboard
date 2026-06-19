@@ -12,7 +12,7 @@ function supportsCrypto() {
 }
 
 async function getEncryptionKey() {
-    const keyData = currentUser?.id + '|' + SUPABASE_KEY;
+    const keyData = currentUser?.id + '|' + (currentUser?.email || 'fallback');
     const keyMaterial = await crypto.subtle.importKey(
         'raw',
         new TextEncoder().encode(keyData),

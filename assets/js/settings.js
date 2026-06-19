@@ -137,6 +137,11 @@ function populateSources() {
 }
 
 async function updatePersonalData() {
+    if (!isOnline) {
+        alert('No hay conexión a internet. Los cambios se guardarán localmente cuando recuperes la conexión.');
+        return;
+    }
+
     const fullName = document.getElementById('set_full_name').value.trim();
     const businessName = document.getElementById('set_business_name').value.trim();
 

@@ -11,9 +11,12 @@ async function startScanner(targetId) {
 
     // Limpiar reader completamente antes de iniciar
     const readerEl = document.getElementById('reader');
+    if (!readerEl) { console.warn('Elemento #reader no encontrado'); return; }
     readerEl.innerHTML = '';
 
-    document.getElementById('scannerModal').style.display = 'flex';
+    const scannerModal = document.getElementById('scannerModal');
+    if (!scannerModal) { console.warn('Elemento #scannerModal no encontrado'); return; }
+    scannerModal.style.display = 'flex';
     lucide.createIcons();
 
     // Destruir instancia anterior si existe
@@ -534,8 +537,8 @@ function handleLaserScan(code) {
     } else {
         const searchInv = document.getElementById('searchInventory');
         const searchSale = document.getElementById('searchSales');
-        const view = document.querySelector('.view.active');
-        if (view && view.id === 'sales' && searchSale) {
+        const activeView = document.querySelector('.view.active');
+        if (activeView && activeView.id === 'sales' && searchSale) {
             searchSale.value = code; renderSales();
         } else if (searchInv) {
             searchInv.value = code; renderInventory();

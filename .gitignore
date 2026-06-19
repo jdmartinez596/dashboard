@@ -31,3 +31,6 @@ backups/*.json
 
 # Logs
 *.log
+
+# Build artifacts
+*.zip

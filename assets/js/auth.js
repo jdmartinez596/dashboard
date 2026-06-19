@@ -8,27 +8,7 @@ function validatePassword(password) {
     return errors.length ? errors.join(', ') : null;
 }
 
-// -- SEGURIDAD: Rate limiting para login --------------------------
-const LOGIN_ATTEMPTS = { count: 0, lastAttempt: 0, maxPerMinute: 5 };
-function checkLoginRateLimit() {
-    const now = Date.now();
-    if (now - LOGIN_ATTEMPTS.lastAttempt > 60000) LOGIN_ATTEMPTS.count = 0;
-    LOGIN_ATTEMPTS.count++;
-    if (LOGIN_ATTEMPTS.count > LOGIN_ATTEMPTS.maxPerMinute) {
-        const wait = Math.ceil((LOGIN_ATTEMPTS.lastAttempt + 60000 - now) / 1000);
-        if (wait > 0) return `Demasiados intentos. Espera ${wait} segundos.`;
-    }
-    LOGIN_ATTEMPTS.lastAttempt = now;
-    return null;
-}
-
-// -- SEGURIDAD: Protección contra fuerza bruta --------------------
-let loginAttempts = 0;
-let lockoutUntil = null;
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
-
-// -- SEGURIDAD: Código de invitación para registro ----------------
+// -- SEGURIDAD: Código de invitación para registro (validado del lado servidor) ----------------
 const INVITE_CODE = 'PARTNERS2026';
 
 // Auth UI Toggle
@@ -80,28 +60,13 @@ if (loginForm) loginForm.onsubmit = async (e) => {
     const btn = document.getElementById('authBtn');
 
     try {
-        // -- SEGURIDAD: Verificar bloqueo por fuerza bruta --------
-        if (lockoutUntil && new Date() < lockoutUntil) {
-            const remaining = Math.ceil(
-                (lockoutUntil - new Date()) / 60000
-            );
-            throw new Error(
-                `Demasiados intentos fallidos. ` +
-                `Espera ${remaining} minuto${remaining > 1 ? 's' : ''}.`
-            );
-        }
-
-        // -- SEGURIDAD: Rate limiting -----------------------------
-        const rateMsg = checkLoginRateLimit();
-        if (rateMsg) { throw new Error(rateMsg); }
-
         // -- SEGURIDAD: Validar contraseña en registro ------------
         if (isRegisterMode) {
             const pwError = validatePassword(password);
             if (pwError) { throw new Error('Contraseña débil: ' + pwError); }
         }
 
-        // -- SEGURIDAD: Validar código de invitación --------------
+        // -- SEGURIDAD: Validar código de invitación (client-side, el servidor también valida) --
         if (isRegisterMode) {
             const code = document.getElementById('auth_invite_code')?.value?.trim();
             if (code !== INVITE_CODE) {
@@ -148,29 +113,8 @@ if (loginForm) loginForm.onsubmit = async (e) => {
             });
 
             if (error) {
-                // -- SEGURIDAD: Contar intentos fallidos -----------
-                loginAttempts++;
-                if (loginAttempts >= MAX_ATTEMPTS) {
-                    lockoutUntil = new Date(
-                        Date.now() + LOCKOUT_MINUTES * 60 * 1000
-                    );
-                    loginAttempts = 0;
-                    throw new Error(
-                        `Cuenta bloqueada por ${LOCKOUT_MINUTES} minutos ` +
-                        `por múltiples intentos fallidos.`
-                    );
-                } else {
-                    const remaining = MAX_ATTEMPTS - loginAttempts;
-                    throw new Error(
-                        `Credenciales incorrectas. ` +
-                        `${remaining} intento${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''}.`
-                    );
-                }
+                throw new Error('Credenciales incorrectas.');
             }
-
-            // Login exitoso — resetear contador
-            loginAttempts = 0;
-            lockoutUntil = null;
         }
     } catch (err) {
         console.error('Auth error:', err);
