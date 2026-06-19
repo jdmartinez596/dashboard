@@ -1,4 +1,5 @@
-const CACHE_NAME = 'gest-inventary-v1';
+const CACHE_NAME = 'gest-inventary-v2';
+const SW_VERSION = '2026-06-19';
 const OFFLINE_URL = '/dashboard/offline.html';
 
 const ASSETS_TO_CACHE = [
