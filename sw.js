@@ -19,7 +19,6 @@ const ASSETS_TO_CACHE = [
     '/dashboard/assets/js/accounting.js',
     '/dashboard/assets/js/scanner.js',
     '/dashboard/assets/js/settings.js',
-    '/dashboard/assets/js/assistant.js'
 ];
 
 self.addEventListener('install', (event) => {
