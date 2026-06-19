@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.gestinventary.app",
+        "sha256_cert_fingerprints": ["F5:F8:18:1A:41:32:D2:50:01:AF:B1:2B:36:BE:0B:F0:8D:04:3E:ED:B7:55:F9:EC:DD:4B:C5:3E:48:7D:DB:B1"]
+      }
+    }]
