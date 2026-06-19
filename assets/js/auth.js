@@ -129,8 +129,17 @@ if (loginForm) loginForm.onsubmit = async (e) => {
 };
 
 async function logout() {
-    await supabaseClient.auth.signOut();
-    location.reload();
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (e) {
+        console.warn('Error en signOut, forzando limpieza local:', e);
+        currentUser = null;
+        Object.keys(localStorage).forEach(k => {
+            if (k.startsWith('sb-') || k.startsWith(LOCAL_STORAGE_KEY)) localStorage.removeItem(k);
+        });
+        document.getElementById('loginView').style.display = 'flex';
+        document.getElementById('appView').style.display = 'none';
+    }
 }
 
 // Auth listeners moved to app.js (after loadState is defined)
