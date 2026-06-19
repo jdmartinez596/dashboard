@@ -227,9 +227,6 @@ async function testSupabaseConnection() {
         if (error) {
             console.error('SUPABASE TEST FALLÓ:', error);
             showToast('Supabase: ' + error.message + '. Los datos se guardan solo localmente.', 'error');
-        } else {
-            console.log('SUPABASE CONECTADO');
-            showToast('Supabase conectado correctamente', 'success');
         }
     } catch (err) {
         console.error('SUPABASE TEST ERROR:', err);
