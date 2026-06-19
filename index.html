@@ -5,6 +5,26 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- iOS PWA support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GestInv">
+    <link rel="apple-touch-icon" href="assets/img/icon-192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="assets/img/icon-152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/icon-192.png">
+
+    <!-- Android Chrome -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#121E6C">
+
+    <!-- Splash screen color -->
+    <meta name="msapplication-TileColor" content="#121E6C">
+    <meta name="msapplication-TileImage" content="assets/img/icon-144.png">
+
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -1049,6 +1069,37 @@
     <script src='assets/js/scanner.js' charset='UTF-8'></script>
     <script src='assets/js/settings.js' charset='UTF-8'></script>
     <script src='assets/js/assistant.js' charset='UTF-8'></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker
+                    .register('/dashboard/sw.js')
+                    .then((reg) => {
+                        console.log('SW registrado:', reg.scope);
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' &&
+                                    navigator.serviceWorker.controller) {
+                                    if (confirm(
+                                        'Nueva versión disponible. ' +
+                                        '¿Actualizar ahora?'
+                                    )) {
+                                        newWorker.postMessage('SKIP_WAITING');
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch((err) => {
+                        console.warn('SW error:', err);
+                    });
+            });
+        }
+    </script>
 </body>
 
 </html>
