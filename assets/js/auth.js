@@ -22,6 +22,15 @@ function checkLoginRateLimit() {
     return null;
 }
 
+// -- SEGURIDAD: Protección contra fuerza bruta --------------------
+let loginAttempts = 0;
+let lockoutUntil = null;
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+
+// -- SEGURIDAD: Código de invitación para registro ----------------
+const INVITE_CODE = 'PARTNERS2026';
+
 // Auth UI Toggle
 const toggleLink = document.getElementById('toggleAuth');
 if (toggleLink) toggleLink.onclick = (e) => {
@@ -39,6 +48,7 @@ if (toggleLink) toggleLink.onclick = (e) => {
         title.innerText = 'Crea tu Cuenta';
         desc.innerText = 'Regístrate para empezar a gestionar tu inventario.';
         registerFields.style.display = 'block';
+        document.getElementById('inviteCodeGroup').style.display = 'block';
         document.getElementById('auth_business').required = true;
         document.getElementById('auth_full_name').required = true;
         btn.innerHTML = '<i data-lucide="user-plus"></i> Registrar Negocio';
@@ -48,6 +58,7 @@ if (toggleLink) toggleLink.onclick = (e) => {
         title.innerText = 'Bienvenido';
         desc.innerText = 'Ingresa tus credenciales para acceder a tu panel personal.';
         registerFields.style.display = 'none';
+        document.getElementById('inviteCodeGroup').style.display = 'none';
         document.getElementById('auth_business').required = false;
         document.getElementById('auth_full_name').required = false;
         btn.innerHTML = '<i data-lucide="log-in"></i> Acceder al Panel';
@@ -69,6 +80,17 @@ if (loginForm) loginForm.onsubmit = async (e) => {
     const btn = document.getElementById('authBtn');
 
     try {
+        // -- SEGURIDAD: Verificar bloqueo por fuerza bruta --------
+        if (lockoutUntil && new Date() < lockoutUntil) {
+            const remaining = Math.ceil(
+                (lockoutUntil - new Date()) / 60000
+            );
+            throw new Error(
+                `Demasiados intentos fallidos. ` +
+                `Espera ${remaining} minuto${remaining > 1 ? 's' : ''}.`
+            );
+        }
+
         // -- SEGURIDAD: Rate limiting -----------------------------
         const rateMsg = checkLoginRateLimit();
         if (rateMsg) { throw new Error(rateMsg); }
@@ -77,6 +99,17 @@ if (loginForm) loginForm.onsubmit = async (e) => {
         if (isRegisterMode) {
             const pwError = validatePassword(password);
             if (pwError) { throw new Error('Contraseña débil: ' + pwError); }
+        }
+
+        // -- SEGURIDAD: Validar código de invitación --------------
+        if (isRegisterMode) {
+            const code = document.getElementById('auth_invite_code')?.value?.trim();
+            if (code !== INVITE_CODE) {
+                throw new Error(
+                    'Código de acceso incorrecto. ' +
+                    'Contacta al administrador.'
+                );
+            }
         }
 
         btn.disabled = true;
@@ -113,7 +146,31 @@ if (loginForm) loginForm.onsubmit = async (e) => {
                 email,
                 password
             });
-            if (error) throw error;
+
+            if (error) {
+                // -- SEGURIDAD: Contar intentos fallidos -----------
+                loginAttempts++;
+                if (loginAttempts >= MAX_ATTEMPTS) {
+                    lockoutUntil = new Date(
+                        Date.now() + LOCKOUT_MINUTES * 60 * 1000
+                    );
+                    loginAttempts = 0;
+                    throw new Error(
+                        `Cuenta bloqueada por ${LOCKOUT_MINUTES} minutos ` +
+                        `por múltiples intentos fallidos.`
+                    );
+                } else {
+                    const remaining = MAX_ATTEMPTS - loginAttempts;
+                    throw new Error(
+                        `Credenciales incorrectas. ` +
+                        `${remaining} intento${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''}.`
+                    );
+                }
+            }
+
+            // Login exitoso — resetear contador
+            loginAttempts = 0;
+            lockoutUntil = null;
         }
     } catch (err) {
         console.error('Auth error:', err);

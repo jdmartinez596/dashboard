@@ -24,8 +24,51 @@ let currentUser = null;
 let isRegisterMode = false;
 
 // ── State Management ──────────────────────────────────────────
+
+// -- SEGURIDAD: Validar datos antes de guardar en Supabase --------
+function validateStateBeforeSave(stateToSave) {
+    if (!Array.isArray(stateToSave.inventory)) return false;
+    if (!Array.isArray(stateToSave.sales)) return false;
+    if (!Array.isArray(stateToSave.transactions)) return false;
+    if (!Array.isArray(stateToSave.returns)) return false;
+    if (typeof stateToSave.settings !== 'object') return false;
+
+    const stateSize = JSON.stringify(stateToSave).length;
+    if (stateSize > 4 * 1024 * 1024) {
+        console.warn('State demasiado grande:', stateSize);
+        return false;
+    }
+
+    const sanitizeString = (str) => {
+        if (typeof str !== 'string') return str;
+        return str
+            .replace(/<script[^>]*>.*?<\/script>/gi, '')
+            .replace(/<[^>]+>/g, '')
+            .trim();
+    };
+
+    stateToSave.inventory = stateToSave.inventory.map(item => ({
+        ...item,
+        serial: sanitizeString(item.serial),
+        model: sanitizeString(item.model),
+        imei: sanitizeString(item.imei)
+    }));
+
+    stateToSave.sales = stateToSave.sales.map(sale => ({
+        ...sale,
+        client: sanitizeString(sale.client),
+        city: sanitizeString(sale.city)
+    }));
+
+    return true;
+}
+
 async function saveState() {
     if (!currentUser) return;
+    if (!validateStateBeforeSave(state)) {
+        console.error('Estado inválido, no se guardará');
+        return;
+    }
     const key = LOCAL_STORAGE_KEY + '_' + currentUser.id;
 
     // Guardar en localStorage inmediatamente (cifrado)

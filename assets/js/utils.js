@@ -77,6 +77,39 @@ async function decryptStored(encoded) {
     }
 }
 
+// ── SEGURIDAD: Encriptación XOR + base64 (capa adicional) ─────
+function encryptXOR(data, key) {
+    const str = JSON.stringify(data);
+    const keyArr = key.split('').map(c => c.charCodeAt(0));
+    const encoded = str.split('').map((c, i) =>
+        String.fromCharCode(
+            c.charCodeAt(0) ^ keyArr[i % keyArr.length]
+        )
+    ).join('');
+    return btoa(unescape(encodeURIComponent(encoded)));
+}
+
+function decryptXOR(encrypted, key) {
+    try {
+        const decoded = decodeURIComponent(
+            escape(atob(encrypted))
+        );
+        const keyArr = key.split('').map(c => c.charCodeAt(0));
+        const decrypted = decoded.split('').map((c, i) =>
+            String.fromCharCode(
+                c.charCodeAt(0) ^ keyArr[i % keyArr.length]
+            )
+        ).join('');
+        return JSON.parse(decrypted);
+    } catch(e) {
+        return null;
+    }
+}
+
+function getXORKey() {
+    return currentUser?.id?.substring(0, 16) || 'default-key-2026';
+}
+
 // ── SEGURIDAD: Auto-logout por inactividad ─────────────────────
 let inactivityTimer = null;
 
@@ -88,7 +121,7 @@ function resetInactivityTimer() {
             supabaseClient.auth.signOut();
             showToast('Sesión cerrada por inactividad', 'warning');
         }
-    }, 30 * 60 * 1000); // 30 minutos
+    }, 60 * 60 * 1000); // 1 hora
 }
 
 ['click', 'keydown', 'mousemove', 'touchstart', 'scroll', 'focus'].forEach(ev =>

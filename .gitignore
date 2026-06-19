@@ -4,6 +4,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Secrets (SEGURIDAD: no subir API keys)
+config/secrets.js
+
 # Env
 .env
 .env.local

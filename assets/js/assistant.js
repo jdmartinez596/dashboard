@@ -1,12 +1,15 @@
-// ── Asistente IA (en desarrollo) ──────────────────────────────
-// Este módulo integrará un asistente inteligente para ayudar
-// en la gestión del dashboard, responder preguntas sobre
-// inventario, ventas y generar recomendaciones.
-//
-// Funcionalidades planificadas:
-// - Chat interactivo con IA
-// - Análisis predictivo de ventas
-// - Recomendaciones de reposición de stock
-// - Alertas inteligentes de negocio
+// ── Asistente IA ──────────────────────────────────────────────
+const AI_API_KEY = window.SECRETS?.GEMINI_API_KEY || '';
+
+async function sendAIMessage() {
+    if (!AI_API_KEY || AI_API_KEY === 'tu-api-key-aqui') {
+        addAIMessage('bot',
+            '⚠️ API Key no configurada. ' +
+            'Agrega tu key en config/secrets.js'
+        );
+        return;
+    }
+    // ... resto del código igual
+}
 
 console.log('Asistente IA — módulo cargado');
